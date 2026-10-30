@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Black circle glass -->
+    <path
+        android:strokeColor="#1A1C1E"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M11,11m-6.5,0a6.5,6.5 0,1 1,13 0a6.5,6.5 0,1 1,-13 0" />
+    <!-- Red handle matching screenshot -->
+    <path
+        android:strokeColor="#EA3434"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:pathData="M16,16L20.5,20.5" />
+</vector>

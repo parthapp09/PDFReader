@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand / Accent (Slightly brighter red for high contrast against dark backgrounds) -->
+    <color name="brand_red">#FF4D4D</color>
+    <color name="brand_red_dark">#D32F2F</color>
+    <color name="crown_gold">#FFB74D</color>
+
+    <!-- Document Type Accents (Adjusted luminance for dark theme) -->
+    <color name="type_pdf">#FF4D4D</color>
+    <color name="type_word">#448AFF</color>
+    <color name="type_excel">#00E676</color>
+    <color name="type_ppt">#FF9100</color>
+    <color name="type_txt">#B0BEC5</color>
+
+    <!-- Dark Theme Backgrounds & Surfaces (AMOLED-friendly Material Dark) -->
+    <color name="bg_screen">#121316</color>
+    <color name="bg_recently_added">#1E2024</color>
+    <color name="card_bg">#1E2024</color>
+    <color name="card_stroke">#2C2F36</color>
+
+    <!-- Text & Icons -->
+    <color name="text_primary">#F5F6F8</color>
+    <color name="text_secondary">#9DA0A8</color>
+    <color name="icon_tint">#E4E6EB</color>
+    <color name="icon_muted">#8A8D96</color>
+</resources>

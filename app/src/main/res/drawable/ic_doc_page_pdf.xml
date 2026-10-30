@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="44dp"
+    android:viewportWidth="36"
+    android:viewportHeight="44">
+    <!-- Red page body with folded top-right corner and rounded bottom corners -->
+    <path
+        android:fillColor="#EA3434"
+        android:pathData="M 6,2 C 3.5,2 2,3.5 2,6 L 2,38 C 2,40.5 3.5,42 6,42 L 30,42 C 32.5,42 34,40.5 34,38 L 34,13 L 23,2 Z" />
+    <!-- Folded dog-ear corner with slight shadow -->
+    <path
+        android:fillColor="#FFCDD2"
+        android:pathData="M 23,2 L 23,13 L 34,13 Z" />
+    <!-- Pinkish-white rounded pill matching screenshot -->
+    <path
+        android:fillColor="#FFEAEA"
+        android:pathData="M 6,18 h 24 c 2.2,0 4,1.8 4,4 v 6 c 0,2.2 -1.8,4 -4,4 H 6 c -2.2,0 -4,-1.8 -4,-4 v -6 c 0,-2.2 1.8,-4 4,-4 z" />
+</vector>

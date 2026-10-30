@@ -1,0 +1,35 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Line 1 with Red knob -->
+    <path
+        android:strokeColor="#1A1C1E"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M3,6h11M19,6h2" />
+    <path
+        android:fillColor="#EA3434"
+        android:pathData="M16.5,6m-2.2,0a2.2,2.2 0,1 1,4.4 0a2.2,2.2 0,1 1,-4.4 0" />
+
+    <!-- Line 2 with Red knob -->
+    <path
+        android:strokeColor="#1A1C1E"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M3,12h2M10,12h11" />
+    <path
+        android:fillColor="#EA3434"
+        android:pathData="M7.5,12m-2.2,0a2.2,2.2 0,1 1,4.4 0a2.2,2.2 0,1 1,-4.4 0" />
+
+    <!-- Line 3 with Red knob -->
+    <path
+        android:strokeColor="#1A1C1E"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M3,18h8M16,18h5" />
+    <path
+        android:fillColor="#EA3434"
+        android:pathData="M13.5,18m-2.2,0a2.2,2.2 0,1 1,4.4 0a2.2,2.2 0,1 1,-4.4 0" />
+</vector>
