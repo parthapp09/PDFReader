@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissions for accessing documents -->
+    <!-- Permissions for accessing documents on device storage -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
@@ -20,15 +20,42 @@
         android:theme="@style/Theme.PdfReader"
         android:requestLegacyExternalStorage="true">
 
-        <!-- Main Home Screen (Launcher) -->
+        <!-- Splash Screen (App Entry Point) -->
         <activity
-            android:name=".presentation.home.HomeActivity"
-            android:exported="true">
+            android:name=".presentation.splash.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.PdfReader.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Language Selection Screen (First Time Flow) -->
+        <activity
+            android:name=".presentation.language.LanguageActivity"
+            android:exported="false" />
+
+        <!-- Main Home Screen -->
+        <activity
+            android:name=".presentation.home.HomeActivity"
+            android:exported="false" />
+
+        <!--
+            FileProvider: exposes files from internal storage (filesDir/samples/)
+            so sample files can be opened by external apps (PDF viewer, Word, etc.)
+            without needing storage permission.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_provider_paths" />
+        </provider>
+
     </application>
 
 </manifest>

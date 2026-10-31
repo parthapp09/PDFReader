@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider paths config.
+    Exposes cacheDir/default_files/ so the sample files bundled from assets
+    can be opened by external viewer apps (PDF viewer, Word, Excel, etc.)
+    without needing READ_EXTERNAL_STORAGE permission.
+-->
+<paths>
+    <!-- context.cacheDir  →  cache-path -->
+    <cache-path
+        name="default_files"
+        path="default_files/" />
+</paths>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardContainer"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="5dp"
+    android:background="@drawable/bg_language_card_unselected"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="16dp">
+
+    <!-- Flag Icon / Badge -->
+    <TextView
+        android:id="@+id/tvFlag"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:gravity="center"
+        android:textSize="24sp"
+        tools:text="🇺🇸" />
+
+    <!-- Language Names -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvLanguageTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            tools:text="English (US)" />
+
+        <TextView
+            android:id="@+id/tvLanguageSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            tools:text="English (US)" />
+    </LinearLayout>
+
+    <!-- Radio Indicator -->
+    <ImageView
+        android:id="@+id/ivRadioSelect"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:src="@drawable/ic_radio_unselected" />
+
+</LinearLayout>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Splash screen app icon:
+    Red document page with folded top-right corner, "PDF" text,
+    and a white circle with pencil/edit icon at the bottom.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Main red document body (rounded rectangle with top-right corner cut) -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="
+        M30,20
+        Q30,10 40,10
+        L145,10
+        L175,40
+        L175,180
+        Q175,190 165,190
+        L40,190
+        Q30,190 30,180
+        Z" />
+
+    <!-- Folded corner triangle (light red/pink) -->
+    <path
+        android:fillColor="#EF9A9A"
+        android:pathData="M145,10 L175,40 L145,40 Z" />
+
+    <!-- "PDF" bold white text — drawn as paths -->
+    <!-- P -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M55,75 L55,115 L63,115 L63,100 L72,100
+        Q82,100 82,87.5 Q82,75 72,75 Z
+        M63,83 L71,83 Q74,83 74,87.5 Q74,92 71,92 L63,92 Z" />
+
+    <!-- D -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M88,75 L88,115 L100,115
+        Q118,115 118,95 Q118,75 100,75 Z
+        M96,83 L99,83 Q110,83 110,95 Q110,107 99,107 L96,107 Z" />
+
+    <!-- F -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M124,75 L124,115 L132,115 L132,99 L146,99 L146,91 L132,91 L132,83 L148,83 L148,75 Z" />
+
+    <!-- White circle badge at bottom center of document -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.8"
+        android:pathData="M 101,118
+                      a 22,22 0 1,0 0,44
+                      a 22,22 0 1,0 0,-44 Z" />
+
+    <!-- Pencil / edit icon inside the circle (red) -->
+    <!-- Pencil body -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="
+        M95,162 L93,169 L100,167 Z" />
+    <path
+        android:fillColor="#E53935"
+        android:strokeColor="#E53935"
+        android:strokeWidth="2.5"
+        android:pathData="M97,164 L107,147" />
+    <!-- Pencil tip highlight -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M107,147 L111,150 L101,167 L97,164 Z" />
+
+    <!-- Circle stroke (white outline ring) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E53935"
+        android:strokeWidth="2"
+        android:pathData="M102,131 A24,24 0 1 1 101.9,131 Z" />
+
+</vector>

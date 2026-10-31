@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<androidx.constraintlayout.widget.ConstraintLayout 
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -17,6 +17,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <!-- Title: "PDF READER" with "PDF" in RED and "READER" in BLACK -->
         <TextView
             android:id="@+id/tvHeaderTitle"
             android:layout_width="wrap_content"
@@ -27,6 +28,7 @@
             android:textColor="@color/text_primary"
             android:textSize="20sp" />
 
+        <!-- 5 Action Icons: Crown, Search, Select, Filter, Settings -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
@@ -80,7 +82,7 @@
         </LinearLayout>
     </RelativeLayout>
 
-    <!-- Search Bar -->
+    <!-- Search Input Bar -->
     <LinearLayout
         android:id="@+id/searchContainer"
         android:layout_width="0dp"
@@ -185,14 +187,14 @@
             app:tint="@color/text_primary" />
     </LinearLayout>
 
-    <!-- High-Performance RecyclerView (Full recycling enabled: only 7-8 visible views inflated) -->
+    <!-- RecyclerView for Documents -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvDocuments"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:paddingTop="4dp"
-        android:paddingBottom="16dp"
+        android:paddingBottom="12dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
         app:layout_constraintEnd_toEndOf="parent"
@@ -214,7 +216,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/layoutRecentlyAdded" />
 
-    <!-- Bottom Navigation Bar -->
+    <!-- Bottom Navigation Bar (Home, Recent, Bookmarks, Tools) -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="0dp"
@@ -225,9 +227,21 @@
         app:itemIconTint="@color/brand_red"
         app:itemTextColor="@color/brand_red"
         app:labelVisibilityMode="labeled"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/layoutBottomBannerAd"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/menu_bottom_navigation" />
+
+    <!-- Persistent Bottom Banner Ad Container (Matches Screenshot: Cetaphil/Zepto Ad) -->
+    <FrameLayout
+        android:id="@+id/layoutBottomBannerAd"
+        android:layout_width="0dp"
+        android:layout_height="52dp"
+        android:background="#F0F4F8"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+    </FrameLayout>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
