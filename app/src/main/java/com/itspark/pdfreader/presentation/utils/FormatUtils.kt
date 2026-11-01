@@ -8,9 +8,14 @@ import java.util.Locale
 
 object FormatUtils {
     private val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)
+    private val dateTimeFormatter = SimpleDateFormat("MMM dd, yyyy  hh:mm a", Locale.ENGLISH)
 
     fun formatDate(timestampMs: Long): String {
         return dateFormatter.format(Date(timestampMs))
+    }
+
+    fun formatDateTime(timestampMs: Long): String {
+        return dateTimeFormatter.format(Date(timestampMs))
     }
 
     fun getFormatBadgeColor(format: DocumentFormat): Int {
