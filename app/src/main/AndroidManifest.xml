@@ -41,6 +41,12 @@
             android:name=".presentation.home.HomeActivity"
             android:exported="false" />
 
+        <!-- Built-in PDF Viewer Screen (Search, Zoom, Navigation, Thumbnails) -->
+        <activity
+            android:name=".presentation.viewer.PdfViewerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+
         <!--
             FileProvider: exposes files from internal storage (filesDir/samples/)
             so sample files can be opened by external apps (PDF viewer, Word, etc.)

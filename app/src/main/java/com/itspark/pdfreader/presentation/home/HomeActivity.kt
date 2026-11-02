@@ -43,6 +43,7 @@ import com.itspark.pdfreader.presentation.home.adapter.DocumentAdapter
 import com.itspark.pdfreader.presentation.home.dialog.PermissionAccessDialog
 import com.itspark.pdfreader.presentation.language.LanguageActivity
 import com.itspark.pdfreader.presentation.utils.FormatUtils
+import com.itspark.pdfreader.presentation.viewer.PdfViewerActivity
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
@@ -445,6 +446,17 @@ class HomeActivity : AppCompatActivity() {
     // ─── File Opening & Sharing ───────────────────────────────────────────────
 
     private fun openDocument(item: DocumentModel) {
+        // Built-in PDF Viewer: opens PDF directly inside our app
+        if (item.format == DocumentFormat.PDF || item.extension.equals("pdf", ignoreCase = true)) {
+            if (item.id >= 0 && !hasStoragePermission()) {
+                showPermissionModalDialog()
+                return
+            }
+            PdfViewerActivity.launch(this, item.path, item.name, item.uri)
+            return
+        }
+
+        // For non-PDF documents (Word, Excel, PPT, TXT), open in external viewer app
         val contentUri: Uri = if (item.id < 0) {
             try {
                 FileProvider.getUriForFile(

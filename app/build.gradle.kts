@@ -52,4 +52,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("androidx.activity:activity-ktx:1.9.1")
     implementation("androidx.fragment:fragment-ktx:1.8.2")
+
+    // PDFBox for Android - Apache 2.0 Open Source Text Extraction & Coordinate Search
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 }

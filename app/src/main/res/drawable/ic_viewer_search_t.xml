@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Magnifying glass outer ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#1A1A1A"
+        android:strokeWidth="2"
+        android:pathData="M10.5,18C6.36,18 3,14.64 3,10.5S6.36,3 10.5,3 18,6.36 18,10.5 14.64,18 10.5,18z" />
+    <!-- Handle -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#1A1A1A"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M16,16l5,5" />
+    <!-- 'T' letter inside -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M7.5,7h6v1.8h-2.1v5.2h-1.8V8.8H7.5V7z" />
+</vector>
