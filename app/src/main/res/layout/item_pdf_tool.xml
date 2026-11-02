@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardTool"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="#F8F9FA"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="0dp"
+    app:strokeColor="#EEF0F4"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingVertical="18dp"
+        android:paddingHorizontal="4dp">
+
+        <!-- Circular Icon Container -->
+        <FrameLayout
+            android:id="@+id/layoutIconCircle"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_tool_circle">
+
+            <ImageView
+                android:id="@+id/ivToolIcon"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center"
+                tools:src="@drawable/ic_tool_image_to_pdf" />
+        </FrameLayout>
+
+        <!-- Tool Name -->
+        <TextView
+            android:id="@+id/tvToolTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:maxLines="1"
+            android:textColor="#1F2937"
+            android:textSize="12.5sp"
+            tools:text="Image to PDF" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

@@ -47,6 +47,11 @@
             android:exported="false"
             android:windowSoftInputMode="adjustPan" />
 
+        <!-- Image to PDF Reorder & Preview Screen -->
+        <activity
+            android:name=".presentation.tools.ImageToPdfPreviewActivity"
+            android:exported="false" />
+
         <!--
             FileProvider: exposes files from internal storage (filesDir/samples/)
             so sample files can be opened by external apps (PDF viewer, Word, etc.)

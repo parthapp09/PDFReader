@@ -61,7 +61,11 @@ class DocumentAdapter(
     }
 
     companion object DiffCallback : DiffUtil.ItemCallback<DocumentModel>() {
-        override fun areItemsTheSame(old: DocumentModel, new: DocumentModel) = old.id == new.id
-        override fun areContentsTheSame(old: DocumentModel, new: DocumentModel) = old == new
+        override fun areItemsTheSame(old: DocumentModel, new: DocumentModel): Boolean {
+            return old.id == new.id || old.path.equals(new.path, ignoreCase = true)
+        }
+        override fun areContentsTheSame(old: DocumentModel, new: DocumentModel): Boolean {
+            return old == new
+        }
     }
 }

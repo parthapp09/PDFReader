@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -29,6 +30,7 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private var fetchJob: Job? = null
     private var allFilesCache = listOf<DocumentModel>()
     private var filesByFormat = mapOf<DocumentFormat, List<DocumentModel>>()
 
@@ -63,13 +65,31 @@ class HomeViewModel(
 
     /**
      * Scans real storage when permission is granted.
+     * @param highlightPath optional path of a newly generated file to ensure it appears at position 0
      */
-    fun fetchDocuments() {
-        viewModelScope.launch {
-            _uiState.value = HomeUiState.Loading
+    fun fetchDocuments(highlightPath: String? = null) {
+        // If an initial scan is already actively running and no specific file was requested,
+        // let the active scan finish rather than canceling it and restarting from scratch.
+        if (fetchJob?.isActive == true && highlightPath == null) {
+            return
+        }
+
+        fetchJob?.cancel()
+        fetchJob = viewModelScope.launch {
+            // Only show full loading spinner if there is no cache yet
+            if (allFilesCache.isEmpty()) {
+                _uiState.value = HomeUiState.Loading
+            }
             try {
                 withContext(Dispatchers.Default) {
-                    val realFiles = repository.getDocuments()
+                    val realFiles = repository.getDocuments().toMutableList()
+                    if (!highlightPath.isNullOrEmpty()) {
+                        val idx = realFiles.indexOfFirst { it.path.equals(highlightPath, ignoreCase = true) }
+                        if (idx > 0) {
+                            val item = realFiles.removeAt(idx)
+                            realFiles.add(0, item)
+                        }
+                    }
                     if (realFiles.isNotEmpty()) {
                         isUsingDummyData = false
                         allFilesCache = realFiles
@@ -89,8 +109,8 @@ class HomeViewModel(
         }
     }
 
-    fun onTabChanged(format: DocumentFormat) {
-        if (selectedFormat == format && currentSearch.isEmpty()) return
+    fun onTabChanged(format: DocumentFormat, force: Boolean = false) {
+        if (!force && selectedFormat == format && currentSearch.isEmpty()) return
         selectedFormat = format
         emitCurrentState()
     }
@@ -244,7 +264,7 @@ class HomeViewModel(
 
             withContext(Dispatchers.Main) {
                 _uiState.value = HomeUiState.Success(
-                    documents = finalList,
+                    documents = ArrayList(finalList),
                     currentFormat = selectedFormat,
                     navTab = currentNavTab,
                     searchQuery = currentSearch,

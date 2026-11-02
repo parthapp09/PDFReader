@@ -42,8 +42,17 @@ import com.itspark.pdfreader.domain.model.NavigationTab
 import com.itspark.pdfreader.presentation.home.adapter.DocumentAdapter
 import com.itspark.pdfreader.presentation.home.dialog.PermissionAccessDialog
 import com.itspark.pdfreader.presentation.language.LanguageActivity
+import com.itspark.pdfreader.presentation.tools.ImageToPdfConverter
+import com.itspark.pdfreader.presentation.tools.ImageToPdfPreviewActivity
+import com.itspark.pdfreader.presentation.tools.PdfToolItem
+import com.itspark.pdfreader.presentation.tools.PdfToolType
+import com.itspark.pdfreader.presentation.tools.PdfToolsAdapter
+import com.itspark.pdfreader.presentation.tools.PdfToolsDataProvider
 import com.itspark.pdfreader.presentation.utils.FormatUtils
 import com.itspark.pdfreader.presentation.viewer.PdfViewerActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
@@ -68,6 +77,32 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private lateinit var documentAdapter: DocumentAdapter
+    private lateinit var toolsAdapter: PdfToolsAdapter
+
+    private val previewImageToPdfLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val createdPath = result.data?.getStringExtra("created_pdf_path")
+            // Automatically switch to Home bottom navigation item
+            binding.bottomNavigationView.selectedItemId = R.id.nav_home
+            // Explicitly select the PDF format tab (index 1)
+            val pdfTab = binding.tabLayout.getTabAt(1)
+            pdfTab?.select()
+            // Force ViewModel to switch to PDF format and fetch documents
+            viewModel.onTabChanged(DocumentFormat.PDF, force = true)
+            viewModel.fetchDocuments(createdPath)
+        }
+    }
+
+    private val pickImagesLauncher = registerForActivityResult(
+        ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            val intent = ImageToPdfPreviewActivity.createIntent(this, uris)
+            previewImageToPdfLauncher.launch(intent)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,10 +121,12 @@ class HomeActivity : AppCompatActivity() {
         setupDualColorTitle()
         setupTabs()
         setupRecyclerView()
+        setupToolsRecyclerView()
         setupTopBarActions()
         setupSearch()
         setupRecentlyAddedBanner()
         setupBottomNavigation()
+        setupBackNavigation()
         observeViewModel()
 
         // 2. Initial Permission Evaluation
@@ -98,10 +135,9 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // If user returns from Settings with permission now granted, load real files
         if (hasStoragePermission()) {
             if (permissionDialog?.isShowing == true) permissionDialog?.dismiss()
-            if (viewModel.isUsingDummyData) viewModel.fetchDocuments()
+            viewModel.fetchDocuments()
         }
     }
 
@@ -183,7 +219,9 @@ class HomeActivity : AppCompatActivity() {
                 viewModel.onTabChanged(tab?.tag as? DocumentFormat ?: DocumentFormat.ALL)
             }
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
-            override fun onTabReselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {
+                viewModel.onTabChanged(tab?.tag as? DocumentFormat ?: DocumentFormat.ALL, force = true)
+            }
         })
     }
 
@@ -192,7 +230,9 @@ class HomeActivity : AppCompatActivity() {
             onItemClick      = { doc -> openDocument(doc) },
             onBookmarkToggle = { doc -> viewModel.toggleBookmark(doc) },
             onMenuClick      = { doc -> showFileOptionsBottomSheet(doc) }
-        )
+        ).apply {
+            stateRestorationPolicy = androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
+        }
         binding.rvDocuments.apply {
             setHasFixedSize(true)
             setItemViewCacheSize(20)
@@ -233,27 +273,65 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupToolsRecyclerView() {
+        toolsAdapter = PdfToolsAdapter(PdfToolsDataProvider.getTools()) { tool ->
+            onToolClicked(tool)
+        }
+        binding.rvTools.apply {
+            layoutManager = GridLayoutManager(this@HomeActivity, 3)
+            adapter = toolsAdapter
+            setHasFixedSize(true)
+        }
+
+        binding.btnToolsCrown.setOnClickListener {
+            Toast.makeText(this, "Premium VIP features", Toast.LENGTH_SHORT).show()
+        }
+        binding.btnToolsSettings.setOnClickListener {
+            startActivity(Intent(this, LanguageActivity::class.java))
+        }
+    }
+
+    private fun onToolClicked(tool: PdfToolItem) {
+        if (tool.type == PdfToolType.IMAGE_TO_PDF) {
+            pickImagesLauncher.launch("image/*")
+        }
+    }
+
+    private fun setupBackNavigation() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (binding.searchContainer.visibility == View.VISIBLE) {
+                    binding.etSearchQuery.text?.clear()
+                    binding.searchContainer.visibility = View.GONE
+                    viewModel.onSearchQuery("")
+                } else if (binding.bottomNavigationView.selectedItemId != R.id.nav_home) {
+                    binding.bottomNavigationView.selectedItemId = R.id.nav_home
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
+    }
+
     private fun setupBottomNavigation() {
         binding.bottomNavigationView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    setupDualColorTitle()
-                    binding.layoutRecentlyAdded.visibility = View.VISIBLE
+                    viewModel.fetchDocuments()
                     viewModel.setNavigationTab(NavigationTab.HOME)
                     true
                 }
                 R.id.nav_bookmarks -> {
-                    binding.tvHeaderTitle.text = "Bookmarks"
-                    binding.layoutRecentlyAdded.visibility = View.GONE
                     viewModel.setNavigationTab(NavigationTab.BOOKMARKS)
+                    true
+                }
+                R.id.nav_tools -> {
+                    viewModel.setNavigationTab(NavigationTab.TOOLS)
                     true
                 }
                 R.id.nav_recent -> {
                     Toast.makeText(this, "Recent files feature coming soon", Toast.LENGTH_SHORT).show()
-                    false
-                }
-                R.id.nav_tools -> {
-                    Toast.makeText(this, "Tools feature coming soon", Toast.LENGTH_SHORT).show()
                     false
                 }
                 else -> false
@@ -272,21 +350,56 @@ class HomeActivity : AppCompatActivity() {
                             binding.tvEmptyState.visibility = View.GONE
                         }
                         is HomeUiState.Success -> {
+                            val isTools = state.navTab == NavigationTab.TOOLS
                             val isBookmarks = state.navTab == NavigationTab.BOOKMARKS
-                            binding.layoutRecentlyAdded.visibility =
-                                if (isBookmarks || state.isSearching) View.GONE else View.VISIBLE
 
-                            documentAdapter.submitList(state.documents)
+                            if (isTools) {
+                                binding.tvHeaderTitle.text = "PDF TOOLS"
+                                binding.layoutHomeActions.visibility = View.GONE
+                                binding.layoutToolsActions.visibility = View.VISIBLE
 
-                            if (state.documents.isEmpty()) {
-                                binding.tvEmptyState.visibility = View.VISIBLE
-                                binding.tvEmptyState.text = if (isBookmarks) {
-                                    "No bookmarked files yet\nTap the star icon on any document to add it here"
-                                } else {
-                                    "No files found"
-                                }
-                            } else {
+                                binding.tabLayout.visibility = View.GONE
+                                binding.layoutRecentlyAdded.visibility = View.GONE
+                                binding.rvDocuments.visibility = View.GONE
                                 binding.tvEmptyState.visibility = View.GONE
+                                binding.searchContainer.visibility = View.GONE
+                                binding.rvTools.visibility = View.VISIBLE
+                            } else {
+                                binding.layoutToolsActions.visibility = View.GONE
+                                binding.layoutHomeActions.visibility = View.VISIBLE
+                                binding.rvTools.visibility = View.GONE
+                                binding.tabLayout.visibility = View.VISIBLE
+                                binding.rvDocuments.visibility = View.VISIBLE
+
+                                if (isBookmarks) {
+                                    binding.tvHeaderTitle.text = "Bookmarks"
+                                    binding.layoutRecentlyAdded.visibility = View.GONE
+                                } else {
+                                    setupDualColorTitle()
+                                    binding.layoutRecentlyAdded.visibility =
+                                        if (state.isSearching) View.GONE else View.VISIBLE
+                                }
+
+                                documentAdapter.submitList(state.documents) {
+                                    if (state.navTab == NavigationTab.HOME && !state.isSearching) {
+                                        val layoutManager = binding.rvDocuments.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager
+                                        val firstPos = layoutManager?.findFirstVisibleItemPosition() ?: 0
+                                        if (firstPos <= 1) {
+                                            binding.rvDocuments.scrollToPosition(0)
+                                        }
+                                    }
+                                }
+
+                                if (state.documents.isEmpty()) {
+                                    binding.tvEmptyState.visibility = View.VISIBLE
+                                    binding.tvEmptyState.text = if (isBookmarks) {
+                                        "No bookmarked files yet\nTap the star icon on any document to add it here"
+                                    } else {
+                                        "No files found"
+                                    }
+                                } else {
+                                    binding.tvEmptyState.visibility = View.GONE
+                                }
                             }
                         }
                         is HomeUiState.Empty -> {

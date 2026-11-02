@@ -28,8 +28,9 @@
             android:textColor="@color/text_primary"
             android:textSize="20sp" />
 
-        <!-- 5 Action Icons: Crown, Search, Select, Filter, Settings -->
+        <!-- Home / Bookmarks Action Icons: Crown, Search, Select, Filter, Settings -->
         <LinearLayout
+            android:id="@+id/layoutHomeActions"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_alignParentEnd="true"
@@ -78,6 +79,34 @@
                 android:layout_marginStart="6dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="4dp"
+                android:src="@drawable/ic_top_settings" />
+        </LinearLayout>
+
+        <!-- Tools Screen Action Icons: Golden Crown and Settings in Box -->
+        <LinearLayout
+            android:id="@+id/layoutToolsActions"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_alignParentEnd="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/btnToolsCrown"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="4dp"
+                android:src="@drawable/ic_top_crown" />
+
+            <ImageView
+                android:id="@+id/btnToolsSettings"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/bg_settings_box"
+                android:padding="7dp"
                 android:src="@drawable/ic_top_settings" />
         </LinearLayout>
     </RelativeLayout>
@@ -216,7 +245,25 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/layoutRecentlyAdded" />
 
-    <!-- Bottom Navigation Bar (Home, Recent, Bookmarks, Tools) -->
+    <!-- PDF Tools Grid View (3 Columns, Matches Screenshot) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvTools"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingHorizontal="10dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="16dp"
+        android:visibility="gone"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+        app:spanCount="3"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/headerLayout"
+        tools:listitem="@layout/item_pdf_tool" />
+
+    <!-- Bottom Navigation Bar (Home, Recent, Bookmarks, Tools) - Located above the ad banner -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="0dp"
@@ -224,15 +271,15 @@
         android:background="@color/card_bg"
         app:elevation="8dp"
         app:itemIconSize="22dp"
-        app:itemIconTint="@color/brand_red"
-        app:itemTextColor="@color/brand_red"
+        app:itemIconTint="@color/selector_nav_item"
+        app:itemTextColor="@color/selector_nav_item"
         app:labelVisibilityMode="labeled"
         app:layout_constraintBottom_toTopOf="@id/layoutBottomBannerAd"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/menu_bottom_navigation" />
 
-    <!-- Persistent Bottom Banner Ad Container (Matches Screenshot: Cetaphil/Zepto Ad) -->
+    <!-- Persistent Bottom Banner Ad Container (Located below bottom navigation panel, matching screenshot) -->
     <FrameLayout
         android:id="@+id/layoutBottomBannerAd"
         android:layout_width="0dp"
