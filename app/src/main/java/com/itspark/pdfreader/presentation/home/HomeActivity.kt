@@ -39,6 +39,7 @@ import com.itspark.pdfreader.databinding.DialogRenameFileBinding
 import com.itspark.pdfreader.domain.model.DocumentFormat
 import com.itspark.pdfreader.domain.model.DocumentModel
 import com.itspark.pdfreader.domain.model.NavigationTab
+import com.itspark.pdfreader.monetization.MonetizationManager
 import com.itspark.pdfreader.presentation.home.adapter.DocumentAdapter
 import com.itspark.pdfreader.presentation.home.dialog.PermissionAccessDialog
 import com.itspark.pdfreader.presentation.language.LanguageActivity
@@ -128,9 +129,16 @@ class HomeActivity : AppCompatActivity() {
         setupBottomNavigation()
         setupBackNavigation()
         observeViewModel()
+        applyCohortMonetizationRules()
 
         // 2. Initial Permission Evaluation
         evaluatePermissionAndLoad()
+    }
+
+    private fun applyCohortMonetizationRules() {
+        // Enforce cohort-based ad display policy (e.g. suppression or tailored display for paid users)
+        binding.layoutBottomBannerAd.visibility =
+            if (MonetizationManager.shouldShowBanner(this)) View.VISIBLE else View.GONE
     }
 
     override fun onResume() {
@@ -559,6 +567,11 @@ class HomeActivity : AppCompatActivity() {
     // ─── File Opening & Sharing ───────────────────────────────────────────────
 
     private fun openDocument(item: DocumentModel) {
+        // Evaluate cohort-based interstitial ad frequency and cooldown
+        if (MonetizationManager.canShowInterstitial(this, "open_document")) {
+            MonetizationManager.recordInterstitialShown(this, "open_document")
+        }
+
         // Built-in PDF Viewer: opens PDF directly inside our app
         if (item.format == DocumentFormat.PDF || item.extension.equals("pdf", ignoreCase = true)) {
             if (item.id >= 0 && !hasStoragePermission()) {

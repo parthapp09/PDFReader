@@ -3,27 +3,36 @@ package com.itspark.pdfreader.presentation.splash
 import android.animation.ObjectAnimator
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.itspark.pdfreader.analytics.AnalyticsTracker
+import com.itspark.pdfreader.consent.ConsentManager
+import com.itspark.pdfreader.data.attribution.InstallAttributionManager
 import com.itspark.pdfreader.data.repository.PreferencesRepository
 import com.itspark.pdfreader.databinding.ActivitySplashBinding
+import com.itspark.pdfreader.monetization.MonetizationManager
 import com.itspark.pdfreader.presentation.home.HomeActivity
 import com.itspark.pdfreader.presentation.language.LanguageActivity
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Splash screen shown every time the app is launched.
  *
- * Flow:
- *   SplashActivity (2.5s)
- *       ↓ isFirstLaunch == true   → LanguageActivity
- *       ↓ isFirstLaunch == false  → HomeActivity
+ * Attribution & Consent Gatekeeper Flow:
+ *   1. Animate progress bar (2.5s)
+ *   2. On first launch: Query Play Install Referrer & detect GCLID / UTM parameters
+ *   3. Persist attribution classification (ORGANIC, PAID_GOOGLE, PAID_OTHER)
+ *   4. Dispatch attribution event and set user properties in Firebase Analytics
+ *   5. Resolve Segment-Aware Consent via Google UMP SDK (GDPR / Privacy)
+ *   6. Initialize cohort-based MonetizationManager before launching dependent activities
+ *   7. Route to LanguageActivity (first launch) or HomeActivity
  */
 class SplashActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySplashBinding
-    private val handler = Handler(Looper.getMainLooper())
 
     companion object {
         private const val SPLASH_DURATION_MS = 2500L
@@ -38,7 +47,7 @@ class SplashActivity : AppCompatActivity() {
         supportActionBar?.hide()
 
         animateProgressBar()
-        scheduleNavigation()
+        resolveAttributionAndNavigate()
     }
 
     /**
@@ -53,26 +62,53 @@ class SplashActivity : AppCompatActivity() {
     }
 
     /**
-     * After the splash duration, navigate to the appropriate next screen.
+     * Resolves attribution signals and configures monetization cohorts before leaving Splash.
      */
-    private fun scheduleNavigation() {
-        handler.postDelayed({
-            if (isFinishing || isDestroyed) return@postDelayed
+    private fun resolveAttributionAndNavigate() {
+        val startTime = System.currentTimeMillis()
 
-            val prefs = PreferencesRepository(this)
-            val next = if (prefs.isFirstLaunch) {
-                Intent(this, LanguageActivity::class.java)
+        lifecycleScope.launch {
+            val prefs = PreferencesRepository(this@SplashActivity)
+
+            // 1. Resolve attribution on first launch
+            if (!prefs.isAttributionResolved) {
+                // Maximum 2.0s timeout to leave headroom for splash animation
+                val attribution = InstallAttributionManager.resolveAttribution(this@SplashActivity, timeoutMs = 2000L)
+                prefs.saveAttribution(attribution)
+
+                // 2. Dispatch attribution event & user segment property to Firebase Analytics
+                AnalyticsTracker.logAttributionEvent(this@SplashActivity, attribution)
             } else {
-                Intent(this, HomeActivity::class.java)
+                // Ensure active user property is in sync with persistent classification
+                val cached = prefs.getAttributionData()
+                AnalyticsTracker.setUserSegment(this@SplashActivity, cached.type, cached.utmSource)
+            }
+
+            // 3. Resolve Segment-Aware Consent via Google UMP SDK (GDPR / Privacy)
+            val segment = prefs.getAttributionType()
+            ConsentManager.resolveConsentAsync(this@SplashActivity, segment, timeoutMs = 2500L)
+
+            // 4. Initialize Cohort Monetization Decision Engine
+            MonetizationManager.initialize(this@SplashActivity)
+
+            // 5. Ensure splash progress bar animation completes smoothly
+            val elapsed = System.currentTimeMillis() - startTime
+            val remainingDelay = (SPLASH_DURATION_MS - elapsed).coerceAtLeast(0L)
+            if (remainingDelay > 0) {
+                delay(remainingDelay.milliseconds)
+            }
+
+            if (isFinishing || isDestroyed) return@launch
+
+            // 5. Navigate to dependent application flow
+            val next = if (prefs.isFirstLaunch) {
+                Intent(this@SplashActivity, LanguageActivity::class.java)
+            } else {
+                Intent(this@SplashActivity, HomeActivity::class.java)
             }
 
             startActivity(next)
-            finish() // remove splash from back stack
-        }, SPLASH_DURATION_MS)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        handler.removeCallbacksAndMessages(null) // prevent leaks
+            finish()
+        }
     }
 }

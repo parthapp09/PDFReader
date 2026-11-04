@@ -56,4 +56,13 @@ dependencies {
 
     // PDFBox for Android - Apache 2.0 Open Source Text Extraction & Coordinate Search
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
+    // Google Play Install Referrer (Attribution & GCLID Detection)
+    implementation("com.android.installreferrer:installreferrer:2.2")
+    // Firebase Analytics (User Segmentation & Attribution Events)
+    implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
+    implementation("com.google.firebase:firebase-analytics")
+
+    // Google User Messaging Platform (UMP SDK for GDPR / Consent Management)
+    implementation("com.google.android.ump:user-messaging-platform:2.2.0")
 }
