@@ -56,6 +56,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.tabs.TabLayout
+import com.itspark.pdfreader.databinding.DialogExitAppBinding
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -315,11 +316,28 @@ class HomeActivity : AppCompatActivity() {
                 } else if (binding.bottomNavigationView.selectedItemId != R.id.nav_home) {
                     binding.bottomNavigationView.selectedItemId = R.id.nav_home
                 } else {
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
+                    showExitAppDialog()
                 }
             }
         })
+    }
+
+    private fun showExitAppDialog() {
+        if (isFinishing || isDestroyed) return
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        val exitBinding = DialogExitAppBinding.inflate(layoutInflater)
+        dialog.setContentView(exitBinding.root)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setCancelable(true)
+        exitBinding.btnCancelExit.setOnClickListener {
+            dialog.dismiss()
+        }
+        exitBinding.btnConfirmExit.setOnClickListener {
+            dialog.dismiss()
+            finish()
+        }
+        dialog.show()
     }
 
     private fun setupBottomNavigation() {

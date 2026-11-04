@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="24dp"
+    app:cardBackgroundColor="@android:color/white"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="12dp"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingHorizontal="22dp"
+        android:paddingTop="22dp"
+        android:paddingBottom="22dp">
+
+        <!-- Header: Close Button & Success Icon -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/ivSuccessCheck"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:layout_centerHorizontal="true"
+                android:src="@drawable/ic_success_check" />
+
+            <ImageView
+                android:id="@+id/btnSuccessClose"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="6dp"
+                android:src="@drawable/ic_close_white"
+                app:tint="#94A3B8" />
+        </RelativeLayout>
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tvSuccessTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:fontFamily="sans-serif-bold"
+            android:text="PDF Created Successfully!"
+            android:textColor="#0F172A"
+            android:textSize="19sp" />
+
+        <!-- File Name -->
+        <TextView
+            android:id="@+id/tvSuccessFileName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:ellipsize="middle"
+            android:fontFamily="sans-serif-medium"
+            android:singleLine="true"
+            android:textColor="#1E293B"
+            android:textSize="14sp"
+            tools:text="ImageToPdf_20261105_004500.pdf" />
+
+        <!-- File Details / Storage Path -->
+        <TextView
+            android:id="@+id/tvSuccessDetails"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:gravity="center"
+            android:textColor="#64748B"
+            android:textSize="12sp"
+            tools:text="3 Pages • 1.2 MB • Saved to Documents" />
+
+        <!-- Dedicated Native Ad Container for Result Screen Monetization -->
+        <FrameLayout
+            android:id="@+id/flSuccessNativeAd"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="#F8FAFC"
+            android:minHeight="110dp">
+
+            <!-- Placeholder content displayed before live native ad loads -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingVertical="18dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="#10B981"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="1dp"
+                    android:text="SPONSORED"
+                    android:textColor="@android:color/white"
+                    android:textSize="9sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Special Partner Tools &amp; Features"
+                    android:textColor="#334155"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="AdMob Native Ad Slot"
+                    android:textColor="#94A3B8"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <!-- Action Buttons: Share & View PDF -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnShareSuccessPdf"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_dialog_cancel_button"
+                android:fontFamily="sans-serif-bold"
+                android:text="SHARE"
+                android:textAllCaps="true"
+                android:textColor="#1E293B"
+                android:textSize="13.5sp" />
+
+            <Space
+                android:layout_width="12dp"
+                android:layout_height="wrap_content" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnViewSuccessPdf"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_dialog_red_button"
+                android:fontFamily="sans-serif-bold"
+                android:text="VIEW PDF ›"
+                android:textAllCaps="true"
+                android:textColor="@android:color/white"
+                android:textSize="13.5sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

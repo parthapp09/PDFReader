@@ -12,18 +12,23 @@ import android.os.Bundle
 import android.view.View
 import android.view.Window
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.itspark.pdfreader.databinding.ActivityImageToPdfPreviewBinding
+import com.itspark.pdfreader.databinding.DialogConversionSuccessBinding
 import com.itspark.pdfreader.databinding.DialogConvertPdfNameBinding
+import com.itspark.pdfreader.databinding.DialogQuitConvertingBinding
 import com.itspark.pdfreader.presentation.viewer.PdfViewerActivity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -70,11 +75,52 @@ class ImageToPdfPreviewActivity : AppCompatActivity() {
 
         setupViews(uris)
         setupDragAndDrop()
+        setupBackNavigation()
+    }
+
+    private fun setupBackNavigation() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                handleExitAttempt()
+            }
+        })
+    }
+
+    private fun handleExitAttempt() {
+        if (binding.layoutLoadingOverlay.visibility == View.VISIBLE) {
+            return
+        }
+        if (adapter.itemCount > 0) {
+            showQuitConfirmDialog()
+        } else {
+            finish()
+        }
+    }
+
+    private fun showQuitConfirmDialog() {
+        if (isFinishing || isDestroyed) return
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        val quitBinding = DialogQuitConvertingBinding.inflate(layoutInflater)
+        dialog.setContentView(quitBinding.root)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setCancelable(true)
+
+        quitBinding.btnCancelQuit.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        quitBinding.btnConfirmQuit.setOnClickListener {
+            dialog.dismiss()
+            finish()
+        }
+
+        dialog.show()
     }
 
     private fun setupViews(initialUris: List<Uri>) {
         binding.btnBack.setOnClickListener {
-            finish()
+            handleExitAttempt()
         }
 
         binding.btnAddMoreImages.setOnClickListener {
@@ -221,8 +267,6 @@ class ImageToPdfPreviewActivity : AppCompatActivity() {
             binding.layoutLoadingOverlay.visibility = View.GONE
 
             if (pdfFile != null && pdfFile.exists()) {
-                Toast.makeText(this@ImageToPdfPreviewActivity, "Saved to Documents: ${pdfFile.name}", Toast.LENGTH_LONG).show()
-
                 // Await MediaScanner confirmation so MediaStore is updated immediately
                 try {
                     suspendCancellableCoroutine<Uri?> { cont ->
@@ -236,24 +280,77 @@ class ImageToPdfPreviewActivity : AppCompatActivity() {
                     }
                 } catch (_: Exception) {}
 
-                val resultIntent = Intent().apply {
-                    putExtra("created_pdf_path", pdfFile.absolutePath)
-                    putExtra("created_pdf_name", pdfFile.name)
-                }
-                setResult(RESULT_OK, resultIntent)
-
-                // Open directly in PDF viewer
-                PdfViewerActivity.launch(
-                    context = this@ImageToPdfPreviewActivity,
-                    path = pdfFile.absolutePath,
-                    name = pdfFile.name,
-                    uri = Uri.fromFile(pdfFile)
-                )
-
-                finish()
+                // Show conversion success dialog with embedded native ad container
+                showConversionSuccessDialog(pdfFile, orderedUris.size)
             } else {
                 Toast.makeText(this@ImageToPdfPreviewActivity, "Failed to create PDF", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun showConversionSuccessDialog(pdfFile: File, pageCount: Int) {
+        if (isFinishing || isDestroyed) return
+
+        // Set result intent for HomeActivity to refresh and highlight the new file
+        val resultIntent = Intent().apply {
+            putExtra("created_pdf_path", pdfFile.absolutePath)
+            putExtra("created_pdf_name", pdfFile.name)
+        }
+        setResult(RESULT_OK, resultIntent)
+
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        val successBinding = DialogConversionSuccessBinding.inflate(layoutInflater)
+        dialog.setContentView(successBinding.root)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setCancelable(false)
+
+        successBinding.tvSuccessFileName.text = pdfFile.name
+        val formattedSize = formatFileSize(pdfFile.length())
+        successBinding.tvSuccessDetails.text = "$pageCount Pages • $formattedSize • Saved to Documents"
+
+        successBinding.btnSuccessClose.setOnClickListener {
+            dialog.dismiss()
+            finish()
+        }
+
+        successBinding.btnShareSuccessPdf.setOnClickListener {
+            shareCreatedPdf(pdfFile)
+        }
+
+        successBinding.btnViewSuccessPdf.setOnClickListener {
+            dialog.dismiss()
+            PdfViewerActivity.launch(
+                context = this,
+                path = pdfFile.absolutePath,
+                name = pdfFile.name,
+                uri = Uri.fromFile(pdfFile)
+            )
+            finish()
+        }
+
+        dialog.show()
+    }
+
+    private fun shareCreatedPdf(pdfFile: File) {
+        val contentUri: Uri = try {
+            FileProvider.getUriForFile(this, "$packageName.fileprovider", pdfFile)
+        } catch (_: Exception) {
+            Uri.fromFile(pdfFile)
+        }
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, contentUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(shareIntent, "Share ${pdfFile.name}"))
+    }
+
+    private fun formatFileSize(sizeBytes: Long): String {
+        if (sizeBytes <= 0) return "0 B"
+        val units = arrayOf("B", "KB", "MB", "GB")
+        val digitGroups = (Math.log10(sizeBytes.toDouble()) / Math.log10(1024.0)).toInt()
+        val value = sizeBytes / Math.pow(1024.0, digitGroups.toDouble())
+        return String.format(Locale.getDefault(), "%.2f %s", value, units[digitGroups.coerceAtMost(units.size - 1)])
     }
 }
