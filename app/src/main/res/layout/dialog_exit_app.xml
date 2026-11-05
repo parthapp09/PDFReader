@@ -4,10 +4,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="24dp"
     app:cardBackgroundColor="@android:color/white"
-    app:cardCornerRadius="20dp"
-    app:cardElevation="10dp"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="12dp"
     app:strokeWidth="0dp">
 
     <LinearLayout
@@ -15,9 +14,9 @@
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:paddingHorizontal="22dp"
-        android:paddingTop="24dp"
-        android:paddingBottom="22dp">
+        android:paddingHorizontal="20dp"
+        android:paddingTop="22dp"
+        android:paddingBottom="20dp">
 
         <TextView
             android:id="@+id/tvExitTitle"
@@ -32,38 +31,65 @@
             android:id="@+id/tvExitSubtitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="6dp"
             android:gravity="center"
             android:lineSpacingExtra="2dp"
             android:text="Are you sure you want to exit the application?"
             android:textColor="#64748B"
             android:textSize="14sp" />
 
-        <!-- Optional Native Ad Container for Exit Dialog Monetization -->
+        <!-- Native Ad Container: Large & Spacious so all ad assets are fully visible -->
         <FrameLayout
             android:id="@+id/flExitAdContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:background="#F8FAFC"
-            android:minHeight="100dp"
-            android:visibility="gone">
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_language_card_unselected"
+            android:minHeight="140dp">
 
-            <!-- Placeholder content when ads are not yet bound -->
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Default placeholder content before live native ad loads -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="Sponsored Ad Placement"
-                android:textColor="#94A3B8"
-                android:textSize="12sp" />
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingVertical="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="#FF9800"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="1dp"
+                    android:text="SPONSORED"
+                    android:textColor="@android:color/white"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Recommended Apps &amp; Partner Offers"
+                    android:textColor="#334155"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="AdMob Native Ad Slot"
+                    android:textColor="#94A3B8"
+                    android:textSize="11.5sp" />
+            </LinearLayout>
         </FrameLayout>
 
         <!-- Actions -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
+            android:layout_marginTop="20dp"
             android:gravity="center"
             android:orientation="horizontal">
 

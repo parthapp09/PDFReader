@@ -5,17 +5,59 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.itspark.pdfreader.PdfReaderApp
 import com.itspark.pdfreader.R
 import com.itspark.pdfreader.databinding.ItemDocumentCardBinding
+import com.itspark.pdfreader.databinding.ItemNativeAdCardBinding
 import com.itspark.pdfreader.domain.model.DocumentFormat
 import com.itspark.pdfreader.domain.model.DocumentModel
+import com.itspark.pdfreader.monetization.AdPlacement
 import com.itspark.pdfreader.presentation.utils.FormatUtils
+
+/**
+ * Item types supported in the document feed.
+ */
+sealed class DocumentFeedItem {
+    data class Document(val model: DocumentModel) : DocumentFeedItem()
+    data class NativeAd(val id: String = "feed_ad") : DocumentFeedItem()
+}
 
 class DocumentAdapter(
     private val onItemClick: (DocumentModel) -> Unit,
     private val onBookmarkToggle: (DocumentModel) -> Unit,
     private val onMenuClick: (DocumentModel) -> Unit
-) : ListAdapter<DocumentModel, DocumentAdapter.DocumentViewHolder>(DiffCallback) {
+) : ListAdapter<DocumentFeedItem, RecyclerView.ViewHolder>(DiffCallback) {
+
+    companion object {
+        private const val VIEW_TYPE_DOCUMENT = 0
+        private const val VIEW_TYPE_NATIVE_AD = 1
+        private const val AD_FREQUENCY = 6
+    }
+
+    /**
+     * Injects Native Ad slots into the document list if ads are eligible.
+     */
+    fun submitDocuments(
+        documents: List<DocumentModel>,
+        showAds: Boolean,
+        commitCallback: (() -> Unit)? = null
+    ) {
+        val items = mutableListOf<DocumentFeedItem>()
+        documents.forEachIndexed { index, doc ->
+            items.add(DocumentFeedItem.Document(doc))
+            if (showAds && (index + 1) % AD_FREQUENCY == 4 && index < documents.size - 1) {
+                items.add(DocumentFeedItem.NativeAd("feed_ad_${index}"))
+            }
+        }
+        submitList(items, commitCallback)
+    }
+
+    override fun getItemViewType(position: Int): Int {
+        return when (getItem(position)) {
+            is DocumentFeedItem.Document -> VIEW_TYPE_DOCUMENT
+            is DocumentFeedItem.NativeAd -> VIEW_TYPE_NATIVE_AD
+        }
+    }
 
     inner class DocumentViewHolder(private val binding: ItemDocumentCardBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -49,22 +91,48 @@ class DocumentAdapter(
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DocumentViewHolder {
-        val binding = ItemDocumentCardBinding.inflate(
-            LayoutInflater.from(parent.context), parent, false
-        )
-        return DocumentViewHolder(binding)
-    }
+    inner class NativeAdViewHolder(private val binding: ItemNativeAdCardBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
-    override fun onBindViewHolder(holder: DocumentViewHolder, position: Int) {
-        holder.bind(getItem(position))
-    }
-
-    companion object DiffCallback : DiffUtil.ItemCallback<DocumentModel>() {
-        override fun areItemsTheSame(old: DocumentModel, new: DocumentModel): Boolean {
-            return old.id == new.id || old.path.equals(new.path, ignoreCase = true)
+        fun bind() {
+            PdfReaderApp.instance.nativeAdManager.loadIntoContainer(
+                container = binding.flFeedNativeAdContainer,
+                placement = AdPlacement.NATIVE_HOME_FEED,
+                layoutResId = R.layout.layout_native_ad_medium
+            )
         }
-        override fun areContentsTheSame(old: DocumentModel, new: DocumentModel): Boolean {
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        return if (viewType == VIEW_TYPE_NATIVE_AD) {
+            val binding = ItemNativeAdCardBinding.inflate(inflater, parent, false)
+            NativeAdViewHolder(binding)
+        } else {
+            val binding = ItemDocumentCardBinding.inflate(inflater, parent, false)
+            DocumentViewHolder(binding)
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val item = getItem(position)) {
+            is DocumentFeedItem.Document -> (holder as DocumentViewHolder).bind(item.model)
+            is DocumentFeedItem.NativeAd -> (holder as NativeAdViewHolder).bind()
+        }
+    }
+
+    object DiffCallback : DiffUtil.ItemCallback<DocumentFeedItem>() {
+        override fun areItemsTheSame(old: DocumentFeedItem, new: DocumentFeedItem): Boolean {
+            return when {
+                old is DocumentFeedItem.Document && new is DocumentFeedItem.Document ->
+                    old.model.id == new.model.id || old.model.path.equals(new.model.path, ignoreCase = true)
+                old is DocumentFeedItem.NativeAd && new is DocumentFeedItem.NativeAd ->
+                    old.id == new.id
+                else -> false
+            }
+        }
+
+        override fun areContentsTheSame(old: DocumentFeedItem, new: DocumentFeedItem): Boolean {
             return old == new
         }
     }

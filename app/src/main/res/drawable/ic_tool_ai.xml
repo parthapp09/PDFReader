@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Center AI Sparkle Star -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,2 L14.4,8.6 L21,11 L14.4,13.4 L12,20 L9.6,13.4 L3,11 L9.6,8.6 Z" />
+    <!-- Secondary Top-Right Sparkle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M19,2 L20.2,5.3 L23.5,6.5 L20.2,7.7 L19,11 L17.8,7.7 L14.5,6.5 L17.8,5.3 Z" />
+    <!-- Small Bottom-Left Accent Sparkle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M5,16 L5.9,18.4 L8.3,19.3 L5.9,20.2 L5,22.6 L4.1,20.2 L1.7,19.3 L4.1,18.4 Z" />
+</vector>

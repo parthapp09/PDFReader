@@ -4,6 +4,7 @@
         <item name="colorPrimaryVariant">@color/brand_red_dark</item>
         <item name="colorOnPrimary">@android:color/white</item>
         <item name="colorSecondary">@color/brand_red</item>
+        <item name="android:windowBackground">@color/bg_screen</item>
 
         <!-- Status Bar Configuration -->
         <item name="android:statusBarColor">@color/bg_screen</item>
@@ -13,5 +14,13 @@
         <!-- Navigation Bar Configuration -->
         <item name="android:navigationBarColor">@color/card_bg</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">false</item>
+    </style>
+
+    <!-- Splash screen theme in dark mode — dark background, no action bar, no flicker -->
+    <style name="Theme.PdfReader.Splash" parent="Theme.PdfReader">
+        <item name="android:windowBackground">@color/bg_screen</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:statusBarColor">@color/bg_screen</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

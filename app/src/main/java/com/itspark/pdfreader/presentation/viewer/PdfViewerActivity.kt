@@ -20,12 +20,13 @@ import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.itspark.pdfreader.PdfReaderApp
 import com.itspark.pdfreader.R
 import com.itspark.pdfreader.data.repository.PreferencesRepository
 import com.itspark.pdfreader.databinding.ActivityPdfViewerBinding
 import com.itspark.pdfreader.databinding.DialogGoToPageBinding
-import com.itspark.pdfreader.presentation.viewer.PdfSearchResult
-import com.itspark.pdfreader.presentation.viewer.PdfTextSearchEngine
+import com.itspark.pdfreader.monetization.AdPlacement
+import com.itspark.pdfreader.monetization.BannerAdManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -35,6 +36,7 @@ class PdfViewerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPdfViewerBinding
     private lateinit var prefs: PreferencesRepository
+    private var bannerAdManager: BannerAdManager? = null
 
     private var fileDescriptor: ParcelFileDescriptor? = null
     private var pdfRenderer: PdfRenderer? = null
@@ -93,6 +95,26 @@ class PdfViewerActivity : AppCompatActivity() {
         setupBottomBar()
         setupSearch()
         setupBackNavigation()
+        setupMonetization()
+    }
+
+    private fun setupMonetization() {
+        // Standard Adaptive Banner pinned at bottom of viewer
+        bannerAdManager = BannerAdManager(this)
+        bannerAdManager?.loadStandardBanner(binding.layoutViewerBannerAd)
+
+        // Preload Interstitial for document close
+        PdfReaderApp.instance.interstitialAdManager.preload(AdPlacement.INTERSTITIAL_CLOSE_DOC)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        bannerAdManager?.resume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        bannerAdManager?.pause()
     }
 
     private fun setupBackNavigation() {
@@ -101,11 +123,20 @@ class PdfViewerActivity : AppCompatActivity() {
                 if (binding.searchTopBar.visibility == View.VISIBLE) {
                     closeSearch()
                 } else {
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
+                    handleExitViewer()
                 }
             }
         })
+    }
+
+    private fun handleExitViewer() {
+        PdfReaderApp.instance.interstitialAdManager.showIfAllowed(
+            activity = this,
+            placement = AdPlacement.INTERSTITIAL_CLOSE_DOC,
+            onAdClosed = {
+                finish()
+            }
+        )
     }
 
     private fun initializePdfRenderer(): Boolean {
@@ -130,7 +161,7 @@ class PdfViewerActivity : AppCompatActivity() {
 
     private fun setupTopBar() {
         binding.btnBack.setOnClickListener {
-            finish()
+            handleExitViewer()
         }
 
         updateBookmarkIcon()
@@ -432,6 +463,8 @@ class PdfViewerActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        bannerAdManager?.destroy()
+        bannerAdManager = null
         searchJob?.cancel()
         pageAdapter?.clearCache()
         thumbnailAdapter?.clearCache()

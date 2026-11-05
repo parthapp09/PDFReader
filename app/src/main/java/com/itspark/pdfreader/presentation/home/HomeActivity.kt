@@ -15,6 +15,7 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.view.View
+import android.view.ViewGroup
 import android.view.Window
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -27,18 +28,25 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.itspark.pdfreader.PdfReaderApp
 import com.itspark.pdfreader.R
 import com.itspark.pdfreader.data.repository.DocumentRepositoryImpl
 import com.itspark.pdfreader.data.repository.PreferencesRepository
 import com.itspark.pdfreader.data.source.MediaStoreScanner
 import com.itspark.pdfreader.databinding.ActivityHomeBinding
 import com.itspark.pdfreader.databinding.BottomSheetFileOptionsBinding
+import com.itspark.pdfreader.databinding.DialogAiFeatureBinding
 import com.itspark.pdfreader.databinding.DialogDeleteConfirmBinding
+import com.itspark.pdfreader.databinding.DialogExitAppBinding
 import com.itspark.pdfreader.databinding.DialogFileInfoBinding
 import com.itspark.pdfreader.databinding.DialogRenameFileBinding
 import com.itspark.pdfreader.domain.model.DocumentFormat
 import com.itspark.pdfreader.domain.model.DocumentModel
 import com.itspark.pdfreader.domain.model.NavigationTab
+import com.itspark.pdfreader.monetization.AdConfigRepository
+import com.itspark.pdfreader.monetization.AdFormatType
+import com.itspark.pdfreader.monetization.AdPlacement
+import com.itspark.pdfreader.monetization.BannerAdManager
 import com.itspark.pdfreader.monetization.MonetizationManager
 import com.itspark.pdfreader.presentation.home.adapter.DocumentAdapter
 import com.itspark.pdfreader.presentation.home.dialog.PermissionAccessDialog
@@ -56,7 +64,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.tabs.TabLayout
-import com.itspark.pdfreader.databinding.DialogExitAppBinding
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -80,6 +87,7 @@ class HomeActivity : AppCompatActivity() {
 
     private lateinit var documentAdapter: DocumentAdapter
     private lateinit var toolsAdapter: PdfToolsAdapter
+    private var bannerAdManager: BannerAdManager? = null
 
     private val previewImageToPdfLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -137,17 +145,60 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun applyCohortMonetizationRules() {
-        // Enforce cohort-based ad display policy (e.g. suppression or tailored display for paid users)
-        binding.layoutBottomBannerAd.visibility =
-            if (MonetizationManager.shouldShowBanner(this)) View.VISIBLE else View.GONE
+        if (!MonetizationManager.shouldShowBanner(this)) {
+            binding.layoutBottomBannerAd.visibility = View.GONE
+            return
+        }
+
+        // Dynamic Ad Format Selection: Evaluates server/remote format preference
+        val configRepo = AdConfigRepository(this)
+        val format = configRepo.getPlacementFormat(AdPlacement.HOME_BOTTOM_BANNER, isFirstLaunch = prefs.isFirstLaunch)
+
+        when (format) {
+            AdFormatType.COLLAPSIBLE_BANNER -> {
+                bannerAdManager = BannerAdManager(this)
+                bannerAdManager?.loadCollapsibleBanner(binding.layoutBottomBannerAd)
+            }
+            AdFormatType.STANDARD_BANNER -> {
+                bannerAdManager = BannerAdManager(this)
+                bannerAdManager?.loadStandardBanner(binding.layoutBottomBannerAd)
+            }
+            AdFormatType.NATIVE -> {
+                PdfReaderApp.instance.nativeAdManager.loadIntoContainer(
+                    container = binding.layoutBottomBannerAd,
+                    placement = AdPlacement.HOME_BOTTOM_BANNER,
+                    layoutResId = R.layout.layout_native_ad_medium
+                )
+            }
+            else -> {
+                bannerAdManager = BannerAdManager(this)
+                bannerAdManager?.loadCollapsibleBanner(binding.layoutBottomBannerAd)
+            }
+        }
+
+        // Defer secondary ad preloads (interstitials, native dialogs, rewarded) by 1500ms
+        // so initial UI inflation, RecyclerView rendering, and file queries have 100% CPU/bandwidth.
+        lifecycleScope.launch {
+            kotlinx.coroutines.delay(1500)
+            PdfReaderApp.instance.interstitialAdManager.preload(AdPlacement.INTERSTITIAL_OPEN_DOC)
+            PdfReaderApp.instance.nativeAdManager.preload(AdPlacement.NATIVE_EXIT_DIALOG)
+            PdfReaderApp.instance.nativeAdManager.preload(AdPlacement.NATIVE_AI_FEATURE)
+            PdfReaderApp.instance.rewardedAdManager.preload(AdPlacement.REWARDED_VIP_FEATURE)
+        }
     }
 
     override fun onResume() {
         super.onResume()
+        bannerAdManager?.resume()
         if (hasStoragePermission()) {
             if (permissionDialog?.isShowing == true) permissionDialog?.dismiss()
             viewModel.fetchDocuments()
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        bannerAdManager?.pause()
     }
 
     private fun evaluatePermissionAndLoad() {
@@ -260,7 +311,14 @@ class HomeActivity : AppCompatActivity() {
             viewModel.onSearchQuery("")
         }
         binding.btnCrown.setOnClickListener {
-            Toast.makeText(this, "Premium VIP features", Toast.LENGTH_SHORT).show()
+            PdfReaderApp.instance.rewardedAdManager.showIfAvailable(
+                activity = this,
+                placement = AdPlacement.REWARDED_VIP_FEATURE,
+                onUserEarnedReward = {
+                    Toast.makeText(this, "VIP Feature unlocked for this session!", Toast.LENGTH_LONG).show()
+                },
+                onAdClosed = {}
+            )
         }
         binding.btnFilter.setOnClickListener {
             Toast.makeText(this, "Sort by Name, Date, Size", Toast.LENGTH_SHORT).show()
@@ -293,7 +351,14 @@ class HomeActivity : AppCompatActivity() {
         }
 
         binding.btnToolsCrown.setOnClickListener {
-            Toast.makeText(this, "Premium VIP features", Toast.LENGTH_SHORT).show()
+            PdfReaderApp.instance.rewardedAdManager.showIfAvailable(
+                activity = this,
+                placement = AdPlacement.REWARDED_VIP_FEATURE,
+                onUserEarnedReward = {
+                    Toast.makeText(this, "VIP Tool unlocked for this session!", Toast.LENGTH_LONG).show()
+                },
+                onAdClosed = {}
+            )
         }
         binding.btnToolsSettings.setOnClickListener {
             startActivity(Intent(this, LanguageActivity::class.java))
@@ -301,9 +366,44 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun onToolClicked(tool: PdfToolItem) {
-        if (tool.type == PdfToolType.IMAGE_TO_PDF) {
-            pickImagesLauncher.launch("image/*")
+        when (tool.type) {
+            PdfToolType.IMAGE_TO_PDF -> {
+                pickImagesLauncher.launch("image/*")
+            }
+            PdfToolType.AI -> {
+                showAiSupportDialog()
+            }
         }
+    }
+
+    private fun showAiSupportDialog() {
+        if (isFinishing || isDestroyed) return
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        val aiBinding = DialogAiFeatureBinding.inflate(layoutInflater)
+        dialog.setContentView(aiBinding.root)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setCancelable(true)
+
+        // Load Native Ad in the AI Support Dialog
+        PdfReaderApp.instance.nativeAdManager.loadIntoContainer(
+            container = aiBinding.flAiNativeAd,
+            placement = AdPlacement.NATIVE_AI_FEATURE,
+            layoutResId = R.layout.layout_native_ad_dialog
+        )
+
+        aiBinding.btnAiClose.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        aiBinding.btnAiContinue.setOnClickListener {
+            dialog.dismiss()
+            Toast.makeText(this, "AI features are now active!", Toast.LENGTH_SHORT).show()
+        }
+
+        dialog.show()
+        val dialogWidth = (resources.displayMetrics.widthPixels * 0.92).toInt()
+        dialog.window?.setLayout(dialogWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
     private fun setupBackNavigation() {
@@ -330,14 +430,26 @@ class HomeActivity : AppCompatActivity() {
         dialog.setContentView(exitBinding.root)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         dialog.setCancelable(true)
+
+        // Load Native Ad in the Exit Dialog
+        PdfReaderApp.instance.nativeAdManager.loadIntoContainer(
+            container = exitBinding.flExitAdContainer,
+            placement = AdPlacement.NATIVE_EXIT_DIALOG,
+            layoutResId = R.layout.layout_native_ad_dialog
+        )
+
         exitBinding.btnCancelExit.setOnClickListener {
             dialog.dismiss()
         }
+
         exitBinding.btnConfirmExit.setOnClickListener {
             dialog.dismiss()
             finish()
         }
+
         dialog.show()
+        val dialogWidth = (resources.displayMetrics.widthPixels * 0.92).toInt()
+        dialog.window?.setLayout(dialogWidth, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
     private fun setupBottomNavigation() {
@@ -406,7 +518,8 @@ class HomeActivity : AppCompatActivity() {
                                         if (state.isSearching) View.GONE else View.VISIBLE
                                 }
 
-                                documentAdapter.submitList(state.documents) {
+                                val showFeedAds = MonetizationManager.shouldShowBanner(this@HomeActivity)
+                                documentAdapter.submitDocuments(state.documents, showAds = showFeedAds) {
                                     if (state.navTab == NavigationTab.HOME && !state.isSearching) {
                                         val layoutManager = binding.rvDocuments.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager
                                         val firstPos = layoutManager?.findFirstVisibleItemPosition() ?: 0
@@ -429,7 +542,7 @@ class HomeActivity : AppCompatActivity() {
                             }
                         }
                         is HomeUiState.Empty -> {
-                            documentAdapter.submitList(emptyList())
+                            documentAdapter.submitDocuments(emptyList(), showAds = false)
                             binding.tvEmptyState.visibility = View.VISIBLE
                             binding.tvEmptyState.text = state.message
                         }
@@ -585,11 +698,16 @@ class HomeActivity : AppCompatActivity() {
     // ─── File Opening & Sharing ───────────────────────────────────────────────
 
     private fun openDocument(item: DocumentModel) {
-        // Evaluate cohort-based interstitial ad frequency and cooldown
-        if (MonetizationManager.canShowInterstitial(this, "open_document")) {
-            MonetizationManager.recordInterstitialShown(this, "open_document")
-        }
+        PdfReaderApp.instance.interstitialAdManager.showIfAllowed(
+            activity = this,
+            placement = AdPlacement.INTERSTITIAL_OPEN_DOC,
+            onAdClosed = {
+                proceedToOpenDocument(item)
+            }
+        )
+    }
 
+    private fun proceedToOpenDocument(item: DocumentModel) {
         // Built-in PDF Viewer: opens PDF directly inside our app
         if (item.format == DocumentFormat.PDF || item.extension.equals("pdf", ignoreCase = true)) {
             if (item.id >= 0 && !hasStoragePermission()) {
@@ -664,6 +782,8 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        bannerAdManager?.destroy()
+        bannerAdManager = null
         permissionDialog?.takeIf { it.isShowing }?.dismiss()
         permissionDialog = null
     }

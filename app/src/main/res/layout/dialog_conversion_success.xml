@@ -5,9 +5,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="24dp"
     app:cardBackgroundColor="@android:color/white"
-    app:cardCornerRadius="20dp"
+    app:cardCornerRadius="24dp"
     app:cardElevation="12dp"
     app:strokeWidth="0dp">
 
@@ -16,9 +15,9 @@
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:paddingHorizontal="22dp"
-        android:paddingTop="22dp"
-        android:paddingBottom="22dp">
+        android:paddingHorizontal="20dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp">
 
         <!-- Header: Close Button & Success Icon -->
         <RelativeLayout
@@ -27,8 +26,8 @@
 
             <ImageView
                 android:id="@+id/ivSuccessCheck"
-                android:layout_width="54dp"
-                android:layout_height="54dp"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
                 android:layout_centerHorizontal="true"
                 android:src="@drawable/ic_success_check" />
 
@@ -49,7 +48,7 @@
             android:id="@+id/tvSuccessTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="10dp"
             android:fontFamily="sans-serif-bold"
             android:text="PDF Created Successfully!"
             android:textColor="#0F172A"
@@ -60,7 +59,7 @@
             android:id="@+id/tvSuccessFileName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="4dp"
             android:ellipsize="middle"
             android:fontFamily="sans-serif-medium"
             android:singleLine="true"
@@ -73,20 +72,20 @@
             android:id="@+id/tvSuccessDetails"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_marginTop="2dp"
             android:gravity="center"
             android:textColor="#64748B"
             android:textSize="12sp"
             tools:text="3 Pages • 1.2 MB • Saved to Documents" />
 
-        <!-- Dedicated Native Ad Container for Result Screen Monetization -->
+        <!-- Dedicated Native Ad Container: Large & Spacious -->
         <FrameLayout
             android:id="@+id/flSuccessNativeAd"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:background="#F8FAFC"
-            android:minHeight="110dp">
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_language_card_unselected"
+            android:minHeight="140dp">
 
             <!-- Placeholder content displayed before live native ad loads -->
             <LinearLayout
@@ -94,7 +93,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingVertical="18dp">
+                android:paddingVertical="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -104,16 +103,16 @@
                     android:paddingVertical="1dp"
                     android:text="SPONSORED"
                     android:textColor="@android:color/white"
-                    android:textSize="9sp"
+                    android:textSize="9.5sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="8dp"
                     android:text="Special Partner Tools &amp; Features"
                     android:textColor="#334155"
-                    android:textSize="12.5sp"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -122,7 +121,7 @@
                     android:layout_marginTop="2dp"
                     android:text="AdMob Native Ad Slot"
                     android:textColor="#94A3B8"
-                    android:textSize="11sp" />
+                    android:textSize="11.5sp" />
             </LinearLayout>
         </FrameLayout>
 
@@ -130,7 +129,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="18dp"
             android:orientation="horizontal">
 
             <androidx.appcompat.widget.AppCompatButton

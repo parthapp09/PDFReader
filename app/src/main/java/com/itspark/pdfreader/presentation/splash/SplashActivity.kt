@@ -1,19 +1,28 @@
 package com.itspark.pdfreader.presentation.splash
 
+import android.Manifest
 import android.animation.ObjectAnimator
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.itspark.pdfreader.PdfReaderApp
 import com.itspark.pdfreader.analytics.AnalyticsTracker
 import com.itspark.pdfreader.consent.ConsentManager
 import com.itspark.pdfreader.data.attribution.InstallAttributionManager
 import com.itspark.pdfreader.data.repository.PreferencesRepository
+import com.itspark.pdfreader.data.source.DocumentCache
+import com.itspark.pdfreader.data.source.MediaStoreScanner
 import com.itspark.pdfreader.databinding.ActivitySplashBinding
 import com.itspark.pdfreader.monetization.MonetizationManager
 import com.itspark.pdfreader.presentation.home.HomeActivity
 import com.itspark.pdfreader.presentation.language.LanguageActivity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -43,16 +52,34 @@ class SplashActivity : AppCompatActivity() {
         binding = ActivitySplashBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Hide the action bar if present
         supportActionBar?.hide()
 
+        prewarmDocumentCacheIfPermitted()
         animateProgressBar()
         resolveAttributionAndNavigate()
     }
 
-    /**
-     * Smoothly animates the progress bar from 0 → 100 over the splash duration.
-     */
+    private fun prewarmDocumentCacheIfPermitted() {
+        if (hasStoragePermission()) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val scanner = MediaStoreScanner(applicationContext)
+                    DocumentCache.preloadedDocuments = scanner.scanDocuments()
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
+    private fun hasStoragePermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
     private fun animateProgressBar() {
         binding.progressBar.progress = 0
         val animator = ObjectAnimator.ofInt(binding.progressBar, "progress", 0, 100)
@@ -70,7 +97,7 @@ class SplashActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val prefs = PreferencesRepository(this@SplashActivity)
 
-            // 1. Resolve attribution on first launch
+            // 1. Resolve attribution from Google Play on first launch
             if (!prefs.isAttributionResolved) {
                 // Maximum 2.0s timeout to leave headroom for splash animation
                 val attribution = InstallAttributionManager.resolveAttribution(this@SplashActivity, timeoutMs = 2000L)
@@ -91,6 +118,13 @@ class SplashActivity : AppCompatActivity() {
             // 4. Initialize Cohort Monetization Decision Engine
             MonetizationManager.initialize(this@SplashActivity)
 
+            // Start preloading the cold start ad in parallel while the 2.5s progress bar animates
+            if (MonetizationManager.shouldShowAppOpenAd(this@SplashActivity) &&
+                ConsentManager.canRequestAds(this@SplashActivity)
+            ) {
+                PdfReaderApp.instance.appOpenAdManager.preloadColdStartAd(this@SplashActivity)
+            }
+
             // 5. Ensure splash progress bar animation completes smoothly
             val elapsed = System.currentTimeMillis() - startTime
             val remainingDelay = (SPLASH_DURATION_MS - elapsed).coerceAtLeast(0L)
@@ -100,15 +134,35 @@ class SplashActivity : AppCompatActivity() {
 
             if (isFinishing || isDestroyed) return@launch
 
-            // 5. Navigate to dependent application flow
-            val next = if (prefs.isFirstLaunch) {
-                Intent(this@SplashActivity, LanguageActivity::class.java)
-            } else {
-                Intent(this@SplashActivity, HomeActivity::class.java)
+            fun proceedToNextScreen() {
+                if (isFinishing || isDestroyed) return
+                val next = if (prefs.isFirstLaunch) {
+                    Intent(this@SplashActivity, LanguageActivity::class.java)
+                } else {
+                    Intent(this@SplashActivity, HomeActivity::class.java)
+                }
+                startActivity(next)
+                if (Build.VERSION.SDK_INT >= 34) {
+                    overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, 0, 0)
+                    overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, 0)
+                } else {
+                    @Suppress("DEPRECATION")
+                    overridePendingTransition(0, 0)
+                }
+                finish()
             }
 
-            startActivity(next)
-            finish()
+            // 6. Cold Start App Open Ad
+            if (MonetizationManager.shouldShowAppOpenAd(this@SplashActivity) &&
+                ConsentManager.canRequestAds(this@SplashActivity)
+            ) {
+                com.itspark.pdfreader.PdfReaderApp.instance.appOpenAdManager.loadAndShowColdStart(
+                    activity = this@SplashActivity,
+                    onComplete = { proceedToNextScreen() }
+                )
+            } else {
+                proceedToNextScreen()
+            }
         }
     }
 }

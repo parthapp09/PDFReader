@@ -4,9 +4,12 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
+import com.itspark.pdfreader.PdfReaderApp
+import com.itspark.pdfreader.R
 import com.itspark.pdfreader.data.repository.PreferencesRepository
 import com.itspark.pdfreader.databinding.ActivityLanguageBinding
 import com.itspark.pdfreader.domain.model.LanguageModel
+import com.itspark.pdfreader.monetization.AdPlacement
 import com.itspark.pdfreader.presentation.home.HomeActivity
 import com.itspark.pdfreader.presentation.language.adapter.LanguageAdapter
 
@@ -43,6 +46,25 @@ class LanguageActivity : AppCompatActivity() {
         setupRecyclerView()
         setupSearch()
         setupDoneButton()
+        setupBottomNativeAd()
+
+        // Preload Interstitial for transition
+        PdfReaderApp.instance.interstitialAdManager.preload(AdPlacement.INTERSTITIAL_LANGUAGE_DONE)
+    }
+
+    private fun setupBottomNativeAd() {
+        // Dynamic ad format: Medium native on first launch onboarding; large native on settings
+        val layoutRes = if (prefs.isFirstLaunch) {
+            R.layout.layout_native_ad_medium
+        } else {
+            R.layout.layout_native_ad_large
+        }
+
+        PdfReaderApp.instance.nativeAdManager.loadIntoContainer(
+            container = binding.layoutBottomAdContainer,
+            placement = AdPlacement.NATIVE_LANGUAGE_ONBOARDING,
+            layoutResId = layoutRes
+        )
     }
 
     private fun setupRecyclerView() {
@@ -75,10 +97,18 @@ class LanguageActivity : AppCompatActivity() {
             prefs.selectedLanguageCode = selectedCode
             prefs.isFirstLaunch = false
 
-            // Navigate to HomeActivity
-            val intent = Intent(this, HomeActivity::class.java)
-            startActivity(intent)
-            finish()
+            fun navigateToHome() {
+                val intent = Intent(this, HomeActivity::class.java)
+                startActivity(intent)
+                finish()
+            }
+
+            // Show Interstitial on transition if allowed by cohort cooldown & mutex
+            PdfReaderApp.instance.interstitialAdManager.showIfAllowed(
+                activity = this,
+                placement = AdPlacement.INTERSTITIAL_LANGUAGE_DONE,
+                onAdClosed = { navigateToHome() }
+            )
         }
     }
 }

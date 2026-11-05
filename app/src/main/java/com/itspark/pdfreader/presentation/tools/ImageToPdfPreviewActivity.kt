@@ -20,10 +20,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.itspark.pdfreader.PdfReaderApp
+import com.itspark.pdfreader.R
 import com.itspark.pdfreader.databinding.ActivityImageToPdfPreviewBinding
 import com.itspark.pdfreader.databinding.DialogConversionSuccessBinding
 import com.itspark.pdfreader.databinding.DialogConvertPdfNameBinding
 import com.itspark.pdfreader.databinding.DialogQuitConvertingBinding
+import com.itspark.pdfreader.monetization.AdPlacement
 import com.itspark.pdfreader.presentation.viewer.PdfViewerActivity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -76,6 +79,10 @@ class ImageToPdfPreviewActivity : AppCompatActivity() {
         setupViews(uris)
         setupDragAndDrop()
         setupBackNavigation()
+
+        // Preload conversion ad units
+        PdfReaderApp.instance.interstitialAdManager.preload(AdPlacement.INTERSTITIAL_POST_CONVERT)
+        PdfReaderApp.instance.nativeAdManager.preload(AdPlacement.NATIVE_CONVERSION_RESULT)
     }
 
     private fun setupBackNavigation() {
@@ -116,6 +123,8 @@ class ImageToPdfPreviewActivity : AppCompatActivity() {
         }
 
         dialog.show()
+        val dialogWidth = (resources.displayMetrics.widthPixels * 0.92).toInt()
+        dialog.window?.setLayout(dialogWidth, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
     private fun setupViews(initialUris: List<Uri>) {
@@ -251,6 +260,8 @@ class ImageToPdfPreviewActivity : AppCompatActivity() {
         }
 
         dialog.show()
+        val dialogWidth = (resources.displayMetrics.widthPixels * 0.92).toInt()
+        dialog.window?.setLayout(dialogWidth, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
     private fun performConversion(orderedUris: List<Uri>, outputFileName: String) {
@@ -280,8 +291,15 @@ class ImageToPdfPreviewActivity : AppCompatActivity() {
                     }
                 } catch (_: Exception) {}
 
-                // Show conversion success dialog with embedded native ad container
-                showConversionSuccessDialog(pdfFile, orderedUris.size)
+                // Present post-conversion interstitial if permitted by cohort cooldown & mutex
+                PdfReaderApp.instance.interstitialAdManager.showIfAllowed(
+                    activity = this@ImageToPdfPreviewActivity,
+                    placement = AdPlacement.INTERSTITIAL_POST_CONVERT,
+                    onAdClosed = {
+                        // Show conversion success dialog with embedded native ad
+                        showConversionSuccessDialog(pdfFile, orderedUris.size)
+                    }
+                )
             } else {
                 Toast.makeText(this@ImageToPdfPreviewActivity, "Failed to create PDF", Toast.LENGTH_SHORT).show()
             }
@@ -309,6 +327,13 @@ class ImageToPdfPreviewActivity : AppCompatActivity() {
         val formattedSize = formatFileSize(pdfFile.length())
         successBinding.tvSuccessDetails.text = "$pageCount Pages • $formattedSize • Saved to Documents"
 
+        // Load Native Ad into Result Screen container
+        PdfReaderApp.instance.nativeAdManager.loadIntoContainer(
+            container = successBinding.flSuccessNativeAd,
+            placement = AdPlacement.NATIVE_CONVERSION_RESULT,
+            layoutResId = R.layout.layout_native_ad_dialog
+        )
+
         successBinding.btnSuccessClose.setOnClickListener {
             dialog.dismiss()
             finish()
@@ -330,6 +355,8 @@ class ImageToPdfPreviewActivity : AppCompatActivity() {
         }
 
         dialog.show()
+        val dialogWidth = (resources.displayMetrics.widthPixels * 0.92).toInt()
+        dialog.window?.setLayout(dialogWidth, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
     private fun shareCreatedPdf(pdfFile: File) {

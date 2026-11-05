@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.itspark.pdfreader.data.repository.DocumentRepository
 import com.itspark.pdfreader.data.repository.PreferencesRepository
+import com.itspark.pdfreader.data.source.DocumentCache
 import com.itspark.pdfreader.data.source.SampleFilesManager
 import com.itspark.pdfreader.domain.model.DocumentFormat
 import com.itspark.pdfreader.domain.model.DocumentModel
@@ -66,23 +67,41 @@ class HomeViewModel(
     /**
      * Scans real storage when permission is granted.
      * @param highlightPath optional path of a newly generated file to ensure it appears at position 0
+     * @param forceRefresh whether to bypass in-memory caches and re-query MediaStore
      */
-    fun fetchDocuments(highlightPath: String? = null) {
+    fun fetchDocuments(highlightPath: String? = null, forceRefresh: Boolean = false) {
         // If an initial scan is already actively running and no specific file was requested,
         // let the active scan finish rather than canceling it and restarting from scratch.
         if (fetchJob?.isActive == true && highlightPath == null) {
             return
         }
 
+        // If files are already loaded in memory and no highlight/refresh requested, keep current data
+        if (!forceRefresh && allFilesCache.isNotEmpty() && highlightPath == null) {
+            return
+        }
+
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
-            // Only show full loading spinner if there is no cache yet
-            if (allFilesCache.isEmpty()) {
+            // 1. Instant Cache Check: If pre-scanned during splash, display immediately (0ms)
+            val preloaded = DocumentCache.preloadedDocuments
+            if (!preloaded.isNullOrEmpty() && allFilesCache.isEmpty()) {
+                isUsingDummyData = false
+                allFilesCache = preloaded
+                filesByFormat = preloaded.groupBy { it.format }
+                emitCurrentState()
+
+                if (highlightPath == null && !forceRefresh) {
+                    return@launch
+                }
+            } else if (allFilesCache.isEmpty()) {
                 _uiState.value = HomeUiState.Loading
             }
+
             try {
                 withContext(Dispatchers.Default) {
                     val realFiles = repository.getDocuments().toMutableList()
+                    DocumentCache.preloadedDocuments = realFiles
                     if (!highlightPath.isNullOrEmpty()) {
                         val idx = realFiles.indexOfFirst { it.path.equals(highlightPath, ignoreCase = true) }
                         if (idx > 0) {
