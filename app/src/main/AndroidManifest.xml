@@ -10,6 +10,10 @@
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:name=".PdfReaderApp"
@@ -67,6 +71,33 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_provider_paths" />
         </provider>
+        <!-- Firebase Cloud Messaging Push Service -->
+        <service
+            android:name=".notification.ReaderFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <!-- Notification Click & Dismiss Telemetry Receiver -->
+        <receiver
+            android:name=".notification.NotificationActionReceiver"
+            android:exported="false" />
+        <!-- Device Unlock Re-engagement Receiver -->
+        <receiver
+            android:name=".notification.receivers.DeviceUnlockReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.USER_PRESENT" />
+            </intent-filter>
+        </receiver>
+        <!-- Full-Screen Promotional & Warning Activity (Triggered via FullScreenIntent) -->
+        <activity
+            android:name=".notification.fullscreen.FullScreenPromotionalActivity"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.PdfReader.FullScreen" />
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713" />

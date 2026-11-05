@@ -12,6 +12,11 @@ import com.itspark.pdfreader.monetization.InterstitialAdManager
 import com.itspark.pdfreader.monetization.MonetizationManager
 import com.itspark.pdfreader.monetization.NativeAdManager
 import com.itspark.pdfreader.monetization.RewardedAdManager
+import com.itspark.pdfreader.notification.NotificationEngine
+import com.itspark.pdfreader.notification.ReaderFirebaseMessagingService
+import com.itspark.pdfreader.notification.observers.DocumentDownloadsObserver
+import com.itspark.pdfreader.notification.observers.ScreenshotObserver
+import com.itspark.pdfreader.notification.work.EngagementScheduler
 import com.itspark.pdfreader.presentation.splash.SplashActivity
 import com.google.android.gms.ads.MobileAds
 import java.lang.ref.WeakReference
@@ -41,6 +46,12 @@ class PdfReaderApp : Application(), Application.ActivityLifecycleCallbacks, Defa
     lateinit var rewardedAdManager: RewardedAdManager
         private set
 
+    var isAppInForeground: Boolean = false
+        private set
+
+    private var screenshotObserver: ScreenshotObserver? = null
+    private var documentDownloadsObserver: DocumentDownloadsObserver? = null
+
     private var currentActivityRef: WeakReference<Activity>? = null
 
     override fun onCreate() {
@@ -64,12 +75,57 @@ class PdfReaderApp : Application(), Application.ActivityLifecycleCallbacks, Defa
         // 4. Register Activity & Process Lifecycle Observers
         registerActivityLifecycleCallbacks(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+
+        // 5. Initialize Notification System & Engagement Engine
+        NotificationEngine.initializeChannels(this)
+        EngagementScheduler.schedulePeriodicEngagement(this)
+        ReaderFirebaseMessagingService.syncAttributionTopics(this)
+        registerFileObservers()
+    }
+
+    /**
+     * Registers application-level ContentObservers for screenshot capture and new document downloads.
+     * Persists across the application process lifecycle so downloads outside the app are detected.
+     */
+    fun registerFileObservers() {
+        val hasStorage = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            android.os.Environment.isExternalStorageManager()
+        } else {
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+
+        if (hasStorage) {
+            try {
+                if (screenshotObserver == null) {
+                    screenshotObserver = ScreenshotObserver(this)
+                    contentResolver.registerContentObserver(
+                        android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        true,
+                        screenshotObserver!!
+                    )
+                }
+                if (documentDownloadsObserver == null) {
+                    documentDownloadsObserver = DocumentDownloadsObserver(this)
+                    contentResolver.registerContentObserver(
+                        android.provider.MediaStore.Files.getContentUri("external"),
+                        true,
+                        documentDownloadsObserver!!
+                    )
+                }
+                Log.d(TAG, "Application-level file ContentObservers registered successfully")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to register application file ContentObservers: ${e.message}")
+            }
+        }
     }
 
     // ─── ProcessLifecycleOwner (Foreground / Background) ─────────────────────
 
     override fun onStart(owner: LifecycleOwner) {
-        super.onStart(owner)
+        isAppInForeground = true
         val currentActivity = currentActivityRef?.get()
 
         // Do not trigger background-resume App Open ad on the Splash screen
@@ -84,8 +140,10 @@ class PdfReaderApp : Application(), Application.ActivityLifecycleCallbacks, Defa
     }
 
     override fun onStop(owner: LifecycleOwner) {
-        super.onStop(owner)
+        isAppInForeground = false
         appOpenAdManager.onAppBackgrounded()
+        // Schedule exit / inactivity engagement check
+        EngagementScheduler.scheduleExitFollowup(this)
     }
 
     // ─── ActivityLifecycleCallbacks ──────────────────────────────────────────

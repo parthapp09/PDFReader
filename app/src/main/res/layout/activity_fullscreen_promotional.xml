@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_screen"
+    android:padding="24dp">
+
+    <!-- Top Bar with Close Button -->
+    <ImageButton
+        android:id="@+id/btnClose"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_close"
+        android:contentDescription="@string/close"
+        app:tint="@color/text_secondary"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Center Content Container -->
+    <LinearLayout
+        android:id="@+id/llCenterContent"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        app:layout_constraintTop_toBottomOf="@id/btnClose"
+        app:layout_constraintBottom_toTopOf="@id/llBottomActions"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Animated / Highlight Icon -->
+        <FrameLayout
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:background="@drawable/bg_recent_added_banner">
+
+            <ImageView
+                android:id="@+id/ivPromoIcon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_warning"
+                app:tint="@color/brand_red"
+                android:contentDescription="Urgent Alert" />
+        </FrameLayout>
+
+        <!-- Urgency Badge -->
+        <TextView
+            android:id="@+id/tvUrgencyBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_floating_nav_pill"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="6dp"
+            android:text="⚠️ URGENT ACTION REQUIRED"
+            android:textColor="@color/brand_red"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tvPromoTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:text="Device Storage Alert"
+            android:textColor="@color/text_primary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <!-- Subtitle / Message -->
+        <TextView
+            android:id="@+id/tvPromoBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:lineSpacingExtra="4dp"
+            android:text="Unindexed and unsaved document fragments detected on device storage. Tap below to index and protect your workspace."
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+
+        <!-- Countdown Timer -->
+        <TextView
+            android:id="@+id/tvCountdownTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Automatic cleanup in 04:59"
+            android:textColor="@color/brand_red"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- Bottom Actions -->
+    <LinearLayout
+        android:id="@+id/llBottomActions"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Primary Action Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPrimaryAction"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:backgroundTint="@color/brand_red"
+            android:text="Scan &amp; Secure Workspace"
+            android:textColor="@android:color/white"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:cornerRadius="12dp" />
+
+        <!-- Secondary Dismiss Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSecondaryDismiss"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:text="Dismiss Alert"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -23,4 +23,12 @@
         <item name="android:statusBarColor">@color/bg_screen</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+    <!-- Full-screen promotional interface theme in dark mode -->
+    <style name="Theme.PdfReader.FullScreen" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/bg_screen</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/card_bg</item>
+    </style>
 </resources>

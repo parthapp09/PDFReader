@@ -48,6 +48,7 @@ import com.itspark.pdfreader.monetization.AdFormatType
 import com.itspark.pdfreader.monetization.AdPlacement
 import com.itspark.pdfreader.monetization.BannerAdManager
 import com.itspark.pdfreader.monetization.MonetizationManager
+import com.itspark.pdfreader.notification.NotificationEngine
 import com.itspark.pdfreader.presentation.home.adapter.DocumentAdapter
 import com.itspark.pdfreader.presentation.home.dialog.PermissionAccessDialog
 import com.itspark.pdfreader.presentation.language.LanguageActivity
@@ -88,6 +89,13 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var documentAdapter: DocumentAdapter
     private lateinit var toolsAdapter: PdfToolsAdapter
     private var bannerAdManager: BannerAdManager? = null
+
+    // Android 13+ Notification Runtime Permission
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        android.util.Log.d("HomeActivity", "POST_NOTIFICATIONS granted: $isGranted")
+    }
 
     private val previewImageToPdfLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -142,6 +150,44 @@ class HomeActivity : AppCompatActivity() {
 
         // 2. Initial Permission Evaluation
         evaluatePermissionAndLoad()
+
+        // 3. Request Notification Permission (Android 13+) and Handle Deep Links
+        requestNotificationPermissionIfRequired()
+        handleDeepLinkIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleDeepLinkIntent(intent)
+    }
+
+    private fun handleDeepLinkIntent(intent: Intent?) {
+        val target = intent?.getStringExtra("navigate_to") ?: return
+        when (target.lowercase()) {
+            "tools" -> {
+                binding.bottomNavigationView.selectedItemId = R.id.nav_tools
+            }
+            "bookmarks" -> {
+                binding.bottomNavigationView.selectedItemId = R.id.nav_home
+                viewModel.setNavigationTab(NavigationTab.BOOKMARKS)
+            }
+            "pdf" -> {
+                binding.bottomNavigationView.selectedItemId = R.id.nav_home
+                binding.tabLayout.getTabAt(1)?.select()
+                viewModel.onTabChanged(DocumentFormat.PDF)
+            }
+        }
+    }
+
+    private fun requestNotificationPermissionIfRequired() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
     }
 
     private fun applyCohortMonetizationRules() {
@@ -190,6 +236,8 @@ class HomeActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         bannerAdManager?.resume()
+        registerObservers()
+        requestNotificationPermissionIfRequired()
         if (hasStoragePermission()) {
             if (permissionDialog?.isShowing == true) permissionDialog?.dismiss()
             viewModel.fetchDocuments()
@@ -199,6 +247,18 @@ class HomeActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         bannerAdManager?.pause()
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // Triggered when user presses Home button or switches to Recent Apps overview
+        NotificationEngine.showDelayedExitNotification(applicationContext)
+    }
+
+    private fun registerObservers() {
+        if (hasStoragePermission()) {
+            PdfReaderApp.instance.registerFileObservers()
+        }
     }
 
     private fun evaluatePermissionAndLoad() {
@@ -444,6 +504,15 @@ class HomeActivity : AppCompatActivity() {
 
         exitBinding.btnConfirmExit.setOnClickListener {
             dialog.dismiss()
+            if (!NotificationEngine.hasNotificationPermission(applicationContext)) {
+                Toast.makeText(
+                    applicationContext,
+                    "⚠️ Notification permission is required. Enable notifications in App Settings.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+            // Schedules exit notification to fire 1.2s after closing, cleanly dropping down on the home screen
+            NotificationEngine.showDelayedExitNotification(applicationContext)
             finish()
         }
 

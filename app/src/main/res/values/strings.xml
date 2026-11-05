@@ -7,4 +7,5 @@
     <string name="title_tools">Tools</string>
     <string name="search_hint">Search files...</string>
     <string name="recently_added">Recently added</string>
+    <string name="close">Close</string>
 </resources>

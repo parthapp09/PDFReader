@@ -14,6 +14,9 @@ object AnalyticsTracker {
     // Custom Event Names
     private const val EVENT_ATTRIBUTION_RESOLVED = "attribution_resolved"
     private const val EVENT_MONETIZATION_COHORT_DECISION = "monetization_decision"
+    private const val EVENT_NOTIFICATION_IMPRESSION = "notification_impression"
+    private const val EVENT_NOTIFICATION_CLICK = "notification_click"
+    private const val EVENT_NOTIFICATION_DISMISSED = "notification_dismissed"
 
     // User Properties
     private const val PROP_USER_SEGMENT = "user_segment"
@@ -95,6 +98,57 @@ object AnalyticsTracker {
             fa?.logEvent(EVENT_MONETIZATION_COHORT_DECISION, bundle)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to log monetization decision", e)
+        }
+    }
+
+    /**
+     * Tracks notification impression.
+     */
+    fun logNotificationImpression(context: Context, notificationId: String, channelId: String) {
+        val fa = getFirebase(context)
+        val bundle = Bundle().apply {
+            putString("notification_id", notificationId)
+            putString("channel_id", channelId)
+            putLong("timestamp_ms", System.currentTimeMillis())
+        }
+        try {
+            fa?.logEvent(EVENT_NOTIFICATION_IMPRESSION, bundle)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to log notification impression", e)
+        }
+    }
+
+    /**
+     * Tracks user click / interaction with a notification.
+     */
+    fun logNotificationClick(context: Context, notificationId: String, channelId: String) {
+        val fa = getFirebase(context)
+        val bundle = Bundle().apply {
+            putString("notification_id", notificationId)
+            putString("channel_id", channelId)
+            putLong("timestamp_ms", System.currentTimeMillis())
+        }
+        try {
+            fa?.logEvent(EVENT_NOTIFICATION_CLICK, bundle)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to log notification click", e)
+        }
+    }
+
+    /**
+     * Tracks notification dismissal (swipe away).
+     */
+    fun logNotificationDismissed(context: Context, notificationId: String, channelId: String) {
+        val fa = getFirebase(context)
+        val bundle = Bundle().apply {
+            putString("notification_id", notificationId)
+            putString("channel_id", channelId)
+            putLong("timestamp_ms", System.currentTimeMillis())
+        }
+        try {
+            fa?.logEvent(EVENT_NOTIFICATION_DISMISSED, bundle)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to log notification dismissal", e)
         }
     }
 }
