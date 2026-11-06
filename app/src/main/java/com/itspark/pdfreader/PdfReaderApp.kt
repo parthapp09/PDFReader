@@ -20,6 +20,7 @@ import com.itspark.pdfreader.notification.observers.ScreenshotObserver
 import com.itspark.pdfreader.notification.work.EngagementScheduler
 import com.itspark.pdfreader.presentation.splash.SplashActivity
 import com.google.android.gms.ads.MobileAds
+import com.itspark.pdfreader.service.DocumentSyncForegroundService
 import java.lang.ref.WeakReference
 
 /**
@@ -85,6 +86,9 @@ class PdfReaderApp : Application(), Application.ActivityLifecycleCallbacks, Defa
         EngagementScheduler.schedulePeriodicEngagement(this)
         ReaderFirebaseMessagingService.syncAttributionTopics(this)
         registerFileObservers()
+
+        // 7. Start Foreground Document Synchronization Service if enabled
+        DocumentSyncForegroundService.startIfEnabled(this)
     }
 
     /**
@@ -93,7 +97,11 @@ class PdfReaderApp : Application(), Application.ActivityLifecycleCallbacks, Defa
      */
     fun registerFileObservers() {
         val hasStorage = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            android.os.Environment.isExternalStorageManager()
+            android.os.Environment.isExternalStorageManager() ||
+                    androidx.core.content.ContextCompat.checkSelfPermission(
+                        this,
+                        android.Manifest.permission.READ_EXTERNAL_STORAGE
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
         } else {
             androidx.core.content.ContextCompat.checkSelfPermission(
                 this,

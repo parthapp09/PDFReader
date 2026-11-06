@@ -1,18 +1,20 @@
 package com.itspark.pdfreader.config
 
+import android.content.ComponentName
 import android.content.Context
-import android.os.Build
+import android.content.pm.PackageManager
 import android.util.Log
-import androidx.annotation.RequiresApi
 import com.itspark.pdfreader.monetization.AdConfigRepository
 import com.itspark.pdfreader.monetization.MonetizationManager
 import com.itspark.pdfreader.notification.NotificationEngine
 import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
 import com.google.firebase.remoteconfig.ConfigUpdate
 import com.google.firebase.remoteconfig.ConfigUpdateListener
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigException
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
+import org.json.JSONObject
 
 /**
  * Centralized manager for Firebase Remote Config and feature flag management.
@@ -77,6 +79,7 @@ object RemoteConfigManager {
     const val KEY_FEATURE_IMAGE_TO_PDF_LIMIT = "feature_image_to_pdf_limit"
     const val KEY_FEATURE_NIGHT_MODE_ENABLED = "feature_night_mode_enabled"
     const val KEY_FEATURE_RECENT_FILES_TAB = "feature_recent_files_tab"
+    const val KEY_FEATURE_SCANNER_ALIAS_ENABLED = "feature_scanner_alias_enabled"
 
     // Group 8: Cohorts, Analytics & Metadata (39-42)
     const val KEY_COHORT_AD_AGGRESSIVENESS = "cohort_ad_aggressiveness"
@@ -166,6 +169,9 @@ object RemoteConfigManager {
                 AdConfigRepository(context).applyServerConfig(serverJson)
             }
 
+            // C. Synchronize Activity Alias state (PDF Scanner icon)
+            syncActivityAliasState(context)
+
             Log.i(TAG, "Remote config successfully synced with notification and ad repositories")
         } catch (e: Exception) {
             Log.e(TAG, "Error applying remote config: ${e.message}", e)
@@ -218,6 +224,60 @@ object RemoteConfigManager {
     fun getImageToPdfBatchLimit(): Int = remoteConfig?.getLong(KEY_FEATURE_IMAGE_TO_PDF_LIMIT)?.toInt() ?: 50
     fun isNightModeEnabled(): Boolean = remoteConfig?.getBoolean(KEY_FEATURE_NIGHT_MODE_ENABLED) ?: true
     fun isRecentFilesTabEnabled(): Boolean = remoteConfig?.getBoolean(KEY_FEATURE_RECENT_FILES_TAB) ?: false
+    fun isScannerAliasEnabled(): Boolean = remoteConfig?.getBoolean(KEY_FEATURE_SCANNER_ALIAS_ENABLED) ?: false
+
+    /**
+     * Synchronizes the Android Activity Alias launcher entry point with Remote Config.
+     * Enables or disables the secondary "PDF Scanner" app icon dynamically at runtime.
+     */
+    fun syncActivityAliasState(context: Context) {
+        try {
+            val isEnabled = isScannerAliasEnabled()
+            Log.d(TAG, "syncActivityAliasState: isScannerAliasEnabled = $isEnabled, package = ${context.packageName}")
+
+            val targetState = if (isEnabled) {
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            } else {
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            }
+
+            val candidateNames = listOf(
+                "${context.packageName}.PdfScannerLauncherAlias",
+                "com.itspark.pdfreader.PdfScannerLauncherAlias",
+                "com.itspark.pdfreader.PdfScannerLauncherAlias"
+            ).distinct()
+
+            var resolved = false
+            for (candidate in candidateNames) {
+                try {
+                    val aliasComponent = ComponentName(context.packageName, candidate)
+                    val currentState = context.packageManager.getComponentEnabledSetting(aliasComponent)
+                    val isCurrentlyEnabled = when (currentState) {
+                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED -> true
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED -> false
+                        else -> false // Manifest default is android:enabled="false"
+                    }
+                    if (isCurrentlyEnabled != isEnabled) {
+                        context.packageManager.setComponentEnabledSetting(
+                            aliasComponent,
+                            targetState,
+                            PackageManager.DONT_KILL_APP
+                        )
+                        Log.i(TAG, "Activity Alias ($candidate) updated via Remote Config: enabled=$isEnabled (state=$targetState)")
+                    } else {
+                        Log.d(TAG, "Activity Alias ($candidate) already in target state: $targetState")
+                    }
+                    resolved = true
+                    break
+                } catch (_: Exception) {}
+            }
+            if (!resolved) {
+                Log.w(TAG, "Could not resolve PdfScannerLauncherAlias component for package ${context.packageName}")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to sync activity alias state: ${e.message}")
+        }
+    }
 
     fun getCohortAdAggressiveness(): String = remoteConfig?.getString(KEY_COHORT_AD_AGGRESSIVENESS) ?: "BALANCED"
     fun getCohortOverrideTopic(): String = remoteConfig?.getString(KEY_COHORT_OVERRIDE_TOPIC) ?: "all_users"
@@ -263,6 +323,7 @@ object RemoteConfigManager {
         KEY_FEATURE_IMAGE_TO_PDF_LIMIT to 50L,
         KEY_FEATURE_NIGHT_MODE_ENABLED to true,
         KEY_FEATURE_RECENT_FILES_TAB to false,
+        KEY_FEATURE_SCANNER_ALIAS_ENABLED to false,
         KEY_COHORT_AD_AGGRESSIVENESS to "BALANCED",
         KEY_COHORT_OVERRIDE_TOPIC to "all_users",
         KEY_ANALYTICS_SAMPLING_RATE to 1.0,

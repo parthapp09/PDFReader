@@ -70,14 +70,15 @@ class HomeViewModel(
      * @param forceRefresh whether to bypass in-memory caches and re-query MediaStore
      */
     fun fetchDocuments(highlightPath: String? = null, forceRefresh: Boolean = false) {
-        // If an initial scan is already actively running and no specific file was requested,
+        // If an initial scan is already actively running and no specific file or refresh was requested,
         // let the active scan finish rather than canceling it and restarting from scratch.
-        if (fetchJob?.isActive == true && highlightPath == null) {
+        if (fetchJob?.isActive == true && highlightPath == null && !forceRefresh) {
             return
         }
 
-        // If files are already loaded in memory and no highlight/refresh requested, keep current data
-        if (!forceRefresh && allFilesCache.isNotEmpty() && highlightPath == null) {
+        // If real files are already loaded in memory and no highlight/refresh requested, keep current data.
+        // NOTE: If currently using dummy data, we MUST scan real files now that permission is granted!
+        if (!forceRefresh && allFilesCache.isNotEmpty() && !isUsingDummyData && highlightPath == null) {
             return
         }
 
@@ -85,16 +86,16 @@ class HomeViewModel(
         fetchJob = viewModelScope.launch {
             // 1. Instant Cache Check: If pre-scanned during splash, display immediately (0ms)
             val preloaded = DocumentCache.preloadedDocuments
-            if (!preloaded.isNullOrEmpty() && allFilesCache.isEmpty()) {
+            if (!preloaded.isNullOrEmpty() && (allFilesCache.isEmpty() || isUsingDummyData) && !forceRefresh) {
                 isUsingDummyData = false
                 allFilesCache = preloaded
                 filesByFormat = preloaded.groupBy { it.format }
                 emitCurrentState()
 
-                if (highlightPath == null && !forceRefresh) {
+                if (highlightPath == null) {
                     return@launch
                 }
-            } else if (allFilesCache.isEmpty()) {
+            } else if (allFilesCache.isEmpty() || isUsingDummyData) {
                 _uiState.value = HomeUiState.Loading
             }
 
@@ -114,11 +115,9 @@ class HomeViewModel(
                         allFilesCache = realFiles
                         filesByFormat = realFiles.groupBy { it.format }
                     } else {
-                        // Fallback to sample files if device storage has no documents
-                        isUsingDummyData = true
-                        val sampleFiles = SampleFilesManager.ensureSamplesExist(getApplication())
-                        allFilesCache = DummyFilesProvider.getDummyDocuments(sampleFiles)
-                        filesByFormat = allFilesCache.groupBy { it.format }
+                        isUsingDummyData = false
+                        allFilesCache = emptyList()
+                        filesByFormat = emptyMap()
                     }
                 }
                 emitCurrentState()

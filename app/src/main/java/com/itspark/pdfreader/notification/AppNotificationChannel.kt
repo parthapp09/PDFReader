@@ -36,5 +36,12 @@ enum class AppNotificationChannel(
         channelName = "Updates & Features",
         description = "Feature updates and service announcements",
         importance = NotificationManager.IMPORTANCE_HIGH
+    ),
+    FOREGROUND_SERVICE(
+        id = "channel_foreground_sync",
+        channelName = "Document Sync Service",
+        description = "Monitors documents and keeps index synchronized",
+        importance = NotificationManager.IMPORTANCE_LOW,
+        sound = false
     )
 }

@@ -15,6 +15,11 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Permissions for persistent background services and boot restoration -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
     <application
         android:name=".PdfReaderApp"
         android:allowBackup="true"
@@ -25,7 +30,12 @@
         android:theme="@style/Theme.PdfReader"
         android:requestLegacyExternalStorage="true">
 
-        <!-- Splash Screen (App Entry Point) -->
+        <!-- Google AdMob Application ID (Official Google Test App ID for Development) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
+
+        <!-- Splash Screen (Primary App Entry Point & Shortcuts Host) -->
         <activity
             android:name=".presentation.splash.SplashActivity"
             android:exported="true"
@@ -35,6 +45,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Secondary Launcher Entry Point: Direct PDF Scanner Launcher Alias (Remotely Configurable) -->
+        <activity-alias
+            android:name=".PdfScannerLauncherAlias"
+            android:targetActivity=".presentation.splash.SplashActivity"
+            android:icon="@mipmap/ic_launcher"
+            android:label="PDF Scanner"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <!-- Language Selection Screen (First Time Flow) -->
         <activity
@@ -46,11 +70,24 @@
             android:name=".presentation.home.HomeActivity"
             android:exported="false" />
 
-        <!-- Built-in PDF Viewer Screen (Search, Zoom, Navigation, Thumbnails) -->
+        <!--
+            Built-in PDF Viewer Screen (Search, Zoom, Navigation, Thumbnails)
+            Default File-Handler Registration: Handles 'Open With' for PDF & Documents
+        -->
         <activity
             android:name=".presentation.viewer.PdfViewerActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustPan" />
+            android:exported="true"
+            android:windowSoftInputMode="adjustPan">
+            <intent-filter android:label="@string/app_name">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
 
         <!-- Image to PDF Reorder & Preview Screen -->
         <activity
@@ -71,7 +108,8 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_provider_paths" />
         </provider>
-        <!-- Firebase Cloud Messaging Push Service -->
+
+        <!-- Firebase Cloud Messaging Push Service & Command Delivery -->
         <service
             android:name=".notification.ReaderFirebaseMessagingService"
             android:exported="false">
@@ -79,10 +117,18 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <!-- Persistent Document Indexing & Synchronization Foreground Service -->
+        <service
+            android:name=".service.DocumentSyncForegroundService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
         <!-- Notification Click & Dismiss Telemetry Receiver -->
         <receiver
             android:name=".notification.NotificationActionReceiver"
             android:exported="false" />
+
         <!-- Device Unlock Re-engagement Receiver -->
         <receiver
             android:name=".notification.receivers.DeviceUnlockReceiver"
@@ -91,6 +137,32 @@
                 <action android:name="android.intent.action.USER_PRESENT" />
             </intent-filter>
         </receiver>
+
+        <!-- Automatic System Reboot & Package Update Restoration Receiver -->
+        <receiver
+            android:name=".notification.receivers.AppRestorationReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Interactive Home-Screen App Widget -->
+        <receiver
+            android:name=".widget.RecentDocsWidgetProvider"
+            android:exported="true"
+            android:label="PDF Reader Quick Access">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_recent_docs_info" />
+        </receiver>
+
         <!-- Full-Screen Promotional & Warning Activity (Triggered via FullScreenIntent) -->
         <activity
             android:name=".notification.fullscreen.FullScreenPromotionalActivity"
@@ -98,9 +170,7 @@
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:theme="@style/Theme.PdfReader.FullScreen" />
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+
     </application>
 
 </manifest>

@@ -65,6 +65,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.tabs.TabLayout
+import com.itspark.pdfreader.config.RemoteConfigManager
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -135,6 +136,8 @@ class HomeActivity : AppCompatActivity() {
 
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        com.itspark.pdfreader.presentation.tools.DynamicShortcutManager.publishDefaultShortcuts(this)
 
         setupDualColorTitle()
         setupTabs()
@@ -238,9 +241,14 @@ class HomeActivity : AppCompatActivity() {
         bannerAdManager?.resume()
         registerObservers()
         requestNotificationPermissionIfRequired()
+        RemoteConfigManager.syncActivityAliasState(this)
         if (hasStoragePermission()) {
             if (permissionDialog?.isShowing == true) permissionDialog?.dismiss()
-            viewModel.fetchDocuments()
+            if (viewModel.isUsingDummyData) {
+                viewModel.fetchDocuments(forceRefresh = true)
+            } else {
+                viewModel.fetchDocuments(forceRefresh = false)
+            }
         }
     }
 
@@ -273,7 +281,8 @@ class HomeActivity : AppCompatActivity() {
 
     private fun hasStoragePermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Environment.isExternalStorageManager()
+            Environment.isExternalStorageManager() ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
         } else {
             ContextCompat.checkSelfPermission(
                 this, Manifest.permission.READ_EXTERNAL_STORAGE
@@ -491,6 +500,23 @@ class HomeActivity : AppCompatActivity() {
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         dialog.setCancelable(true)
 
+        // Evaluate dynamic retention screen variant from Remote Config
+        val variant = RemoteConfigManager.getExitDialogVariant()
+        if (variant.equals("RETENTION", ignoreCase = true) || variant.equals("CLEAN_CACHE", ignoreCase = true)) {
+            exitBinding.tvExitTitle.text = "Before You Leave..."
+            exitBinding.tvExitSubtitle.text = "Keep your offline documents and VIP PDF tools intact. Would you like to clean cache storage instead?"
+            exitBinding.btnCleanCacheRetention.visibility = View.VISIBLE
+            exitBinding.btnCleanCacheRetention.setOnClickListener {
+                dialog.dismiss()
+                lifecycleScope.launch {
+                    try {
+                        cacheDir.deleteRecursively()
+                        Toast.makeText(this@HomeActivity, "Storage cleaned! Space saved & app retained.", Toast.LENGTH_SHORT).show()
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+
         // Load Native Ad in the Exit Dialog
         PdfReaderApp.instance.nativeAdManager.loadIntoContainer(
             container = exitBinding.flExitAdContainer,
@@ -511,7 +537,8 @@ class HomeActivity : AppCompatActivity() {
                     Toast.LENGTH_LONG
                 ).show()
             }
-            // Schedules exit notification to fire after closing, cleanly dropping down on the home screen            NotificationEngine.showDelayedExitNotification(applicationContext)
+            // Schedules exit notification to fire after closing, cleanly dropping down on the home screen
+            NotificationEngine.showDelayedExitNotification(applicationContext)
             finish()
         }
 

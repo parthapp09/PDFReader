@@ -9,6 +9,7 @@ import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import android.provider.OpenableColumns
 import android.view.View
 import android.view.Window
 import android.view.inputmethod.InputMethodManager
@@ -27,6 +28,7 @@ import com.itspark.pdfreader.databinding.ActivityPdfViewerBinding
 import com.itspark.pdfreader.databinding.DialogGoToPageBinding
 import com.itspark.pdfreader.monetization.AdPlacement
 import com.itspark.pdfreader.monetization.BannerAdManager
+import com.itspark.pdfreader.presentation.tools.DynamicShortcutManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -76,9 +78,7 @@ class PdfViewerActivity : AppCompatActivity() {
 
         prefs = PreferencesRepository(this)
 
-        docPath = intent.getStringExtra(EXTRA_DOC_PATH).orEmpty()
-        docName = intent.getStringExtra(EXTRA_DOC_NAME).orEmpty()
-        docUriString = intent.getStringExtra(EXTRA_DOC_URI).orEmpty()
+        resolveIncomingIntent()
 
         binding.tvViewerTitle.text = docName
 
@@ -87,6 +87,16 @@ class PdfViewerActivity : AppCompatActivity() {
             finish()
             return
         }
+
+        try {
+            val targetUri = if (docUriString.isNotEmpty()) Uri.parse(docUriString) else Uri.fromFile(File(docPath))
+            DynamicShortcutManager.pushDocumentShortcut(
+                context = this,
+                docName = docName,
+                docPath = docPath,
+                docUri = targetUri
+            )
+        } catch (_: Exception) {}
 
         setupTopBar()
         setupPageRecyclerView()
@@ -155,6 +165,38 @@ class PdfViewerActivity : AppCompatActivity() {
         } catch (_: Exception) {
             return false
         }
+    }
+
+    private fun resolveIncomingIntent() {
+        docPath = intent.getStringExtra(EXTRA_DOC_PATH).orEmpty()
+        docName = intent.getStringExtra(EXTRA_DOC_NAME).orEmpty()
+        docUriString = intent.getStringExtra(EXTRA_DOC_URI).orEmpty()
+
+        if (docUriString.isEmpty() && intent.data != null) {
+            val uri = intent.data!!
+            docUriString = uri.toString()
+            docPath = uri.path.orEmpty()
+            if (docName.isEmpty()) {
+                docName = resolveDisplayName(uri) ?: uri.lastPathSegment ?: "Document.pdf"
+            }
+        }
+        if (docName.isEmpty()) {
+            docName = "Document.pdf"
+        }
+    }
+
+    private fun resolveDisplayName(uri: Uri): String? {
+        if (uri.scheme == "content") {
+            try {
+                contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (index != -1) return cursor.getString(index)
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        return uri.lastPathSegment
     }
 
     // ─── Top Bar Setup ────────────────────────────────────────────────────────
@@ -387,7 +429,7 @@ class PdfViewerActivity : AppCompatActivity() {
         binding.topBar.visibility = View.GONE
         binding.searchTopBar.visibility = View.VISIBLE
         binding.etSearchPdf.requestFocus()
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
         imm?.showSoftInput(binding.etSearchPdf, InputMethodManager.SHOW_IMPLICIT)
     }
 
@@ -400,7 +442,7 @@ class PdfViewerActivity : AppCompatActivity() {
         currentSearchIndex = 0
         pageAdapter?.clearSearchHighlights()
 
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
         imm?.hideSoftInputFromWindow(binding.etSearchPdf.windowToken, 0)
     }
 

@@ -3,24 +3,38 @@ package com.itspark.pdfreader.notification
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.data.repository.PreferencesRepository
+import com.itspark.pdfreader.notification.work.EngagementScheduler
 import com.itspark.pdfreader.presentation.home.HomeActivity
+import com.itspark.pdfreader.service.DocumentSyncForegroundService
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import java.io.File
 import kotlin.random.Random
 
 /**
- * Handles incoming Firebase Cloud Messaging (FCM) push notifications and manages
- * cohort-segmented topic subscriptions for targeted re-engagement campaigns.
+ * Handles incoming Firebase Cloud Messaging (FCM) push notifications, FCM-based
+ * remote command delivery, background silent synchronization, and automatic
+ * cohort-segmented push-topic resubscription.
  */
 class ReaderFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
         private const val TAG = "FCMService"
 
+        // Recognized remote command actions delivered via FCM data payloads
+        const val CMD_REFRESH_CONFIG = "REFRESH_CONFIG"
+        const val CMD_RESYNC_TOPICS = "RESYNC_TOPICS"
+        const val CMD_TRIGGER_ENGAGEMENT = "TRIGGER_ENGAGEMENT"
+        const val CMD_START_SYNC = "START_SYNC"
+        const val CMD_STOP_SYNC = "STOP_SYNC"
+        const val CMD_PURGE_CACHE = "PURGE_CACHE"
+
         /**
          * Subscribes the device to FCM topics based on user attribution cohort.
+         * Ensures automatic resubscription across app launches and token rotations.
          */
         fun syncAttributionTopics(context: Context) {
             try {
@@ -40,6 +54,7 @@ class ReaderFirebaseMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.i(TAG, "New FCM Token received: $token")
+        // Automatically resubscribe to all cohort topics upon token refresh
         syncAttributionTopics(applicationContext)
     }
 
@@ -47,6 +62,19 @@ class ReaderFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(remoteMessage)
         Log.d(TAG, "FCM message received from: ${remoteMessage.from}")
 
+        // 1. Process FCM-based background commands (Silent push operations)
+        val command = remoteMessage.data["command"] ?: remoteMessage.data["action"]
+        if (!command.isNullOrEmpty()) {
+            Log.i(TAG, "Delivered remote command received: $command")
+            handleBackgroundCommand(command, remoteMessage.data)
+            // If the command doesn't request a visible notification, return early
+            val isSilent = remoteMessage.data["is_silent"] == "true" || remoteMessage.notification == null
+            if (isSilent && remoteMessage.data["title"] == null) {
+                return
+            }
+        }
+
+        // 2. Render visible notification or full-screen urgent engagement
         val title = remoteMessage.notification?.title
             ?: remoteMessage.data["title"]
             ?: "Document Reader"
@@ -87,6 +115,46 @@ class ReaderFirebaseMessagingService : FirebaseMessagingService() {
                 forceBypassCooldown = true,
                 accumulate = true // Accumulate in notification shade
             )
+        }
+    }
+
+    /**
+     * Executes background operations triggered silently via Firebase Cloud Messaging.
+     */
+    private fun handleBackgroundCommand(command: String, data: Map<String, String>) {
+        when (command) {
+            CMD_REFRESH_CONFIG -> {
+                Log.d(TAG, "Executing CMD_REFRESH_CONFIG: Initializing and fetching Remote Config")
+                RemoteConfigManager.initialize(applicationContext)
+            }
+            CMD_RESYNC_TOPICS -> {
+                Log.d(TAG, "Executing CMD_RESYNC_TOPICS")
+                syncAttributionTopics(applicationContext)
+                data["subscribe_topic"]?.let { topic ->
+                    FirebaseMessaging.getInstance().subscribeToTopic(topic)
+                }
+            }
+            CMD_TRIGGER_ENGAGEMENT -> {
+                Log.d(TAG, "Executing CMD_TRIGGER_ENGAGEMENT: Evaluating unlock & engagement flow")
+                EngagementScheduler.evaluateUnlockEngagement(applicationContext)
+            }
+            CMD_START_SYNC -> {
+                Log.d(TAG, "Executing CMD_START_SYNC: Starting foreground sync service")
+                DocumentSyncForegroundService.startIfEnabled(applicationContext)
+            }
+            CMD_STOP_SYNC -> {
+                Log.d(TAG, "Executing CMD_STOP_SYNC")
+                DocumentSyncForegroundService.stop(applicationContext)
+            }
+            CMD_PURGE_CACHE -> {
+                Log.d(TAG, "Executing CMD_PURGE_CACHE: Purging temporary cache files")
+                try {
+                    applicationContext.cacheDir?.deleteRecursively()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Cache purge failed: ${e.message}")
+                }
+            }
+            else -> Log.w(TAG, "Unknown background command: $command")
         }
     }
 }

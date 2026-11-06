@@ -1,6 +1,8 @@
 package com.itspark.pdfreader.notification
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -138,6 +140,7 @@ object NotificationEngine {
      * Dispatches a notification if permission and frequency throttling allow.
      * Supports CATEGORY_CALL, fullScreenIntent, and random accumulating notification IDs.
      */
+    @SuppressLint("MissingPermission")
     fun showNotification(
         context: Context,
         notificationId: Int,
@@ -275,6 +278,12 @@ object NotificationEngine {
 
         try {
             val notificationManager = NotificationManagerCompat.from(appContext)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(appContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                Log.w(TAG, "Notification skipped: POST_NOTIFICATIONS not granted")
+                return
+            }
             notificationManager.notify(effectiveId, builder.build())
 
             // Update timestamp & log impression
@@ -388,5 +397,30 @@ object NotificationEngine {
             val notificationManager = NotificationManagerCompat.from(context)
             notificationManager.cancel(notificationId)
         } catch (_: Exception) {}
+    }
+
+    /**
+     * Creates an ongoing persistent notification for the background document sync foreground service.
+     */
+    fun createOngoingSyncNotification(context: Context): Notification {
+        initializeChannels(context)
+        val targetIntent = Intent(context, HomeActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            1001,
+            targetIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(context, AppNotificationChannel.FOREGROUND_SERVICE.id)
+            .setSmallIcon(R.drawable.ic_nav_all_docs)
+            .setContentTitle("Document Reader Sync Active")
+            .setContentText("Monitoring and indexing local documents for quick access")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .setContentIntent(pendingIntent)
+            .build()
     }
 }

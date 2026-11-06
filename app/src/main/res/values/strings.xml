@@ -8,4 +8,10 @@
     <string name="search_hint">Search files...</string>
     <string name="recently_added">Recently added</string>
     <string name="close">Close</string>
+    <string name="shortcut_scan_short">Image to PDF</string>
+    <string name="shortcut_scan_long">Convert images to PDF</string>
+    <string name="shortcut_recent_short">Recent Docs</string>
+    <string name="shortcut_recent_long">Open recent documents</string>
+    <string name="shortcut_all_short">All PDFs</string>
+    <string name="shortcut_all_long">Browse all device PDF files</string>
 </resources>

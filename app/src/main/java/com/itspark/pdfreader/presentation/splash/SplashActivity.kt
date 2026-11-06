@@ -24,6 +24,7 @@ import com.itspark.pdfreader.monetization.AdPlacement
 import com.itspark.pdfreader.monetization.MonetizationManager
 import com.itspark.pdfreader.presentation.home.HomeActivity
 import com.itspark.pdfreader.presentation.language.LanguageActivity
+import com.itspark.pdfreader.presentation.tools.DynamicShortcutManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -55,7 +56,7 @@ class SplashActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         supportActionBar?.hide()
-
+        DynamicShortcutManager.publishDefaultShortcuts(this)
         prewarmDocumentCacheIfPermitted()
         animateProgressBar()
         resolveAttributionAndNavigate()
@@ -74,7 +75,8 @@ class SplashActivity : AppCompatActivity() {
 
     private fun hasStoragePermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Environment.isExternalStorageManager()
+            Environment.isExternalStorageManager() ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
         } else {
             ContextCompat.checkSelfPermission(
                 this, Manifest.permission.READ_EXTERNAL_STORAGE
@@ -151,7 +153,11 @@ class SplashActivity : AppCompatActivity() {
                 val next = if (prefs.isFirstLaunch) {
                     Intent(this@SplashActivity, LanguageActivity::class.java)
                 } else {
-                    Intent(this@SplashActivity, HomeActivity::class.java)
+                    Intent(this@SplashActivity, HomeActivity::class.java).apply {
+                        if (intent.component?.className?.contains("Scanner", ignoreCase = true) == true) {
+                            putExtra("navigate_to", "tools")
+                        }
+                    }
                 }
                 startActivity(next)
                 if (Build.VERSION.SDK_INT >= 34) {

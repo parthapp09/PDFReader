@@ -14,11 +14,13 @@ import java.io.File
 
 class MediaStoreScanner(private val context: Context) {
 
-    private val supportedExtensions = listOf("pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "csv", "txt")
+    private val supportedExtensions = setOf("pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "csv", "txt")
 
     suspend fun scanDocuments(): List<DocumentModel> = withContext(Dispatchers.IO) {
         val documents = ArrayList<DocumentModel>(256)
+        val existingPaths = HashSet<String>(256)
 
+        // 1. Query Android MediaStore
         val contentUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
         } else {
@@ -34,9 +36,8 @@ class MediaStoreScanner(private val context: Context) {
         )
 
         val selection = supportedExtensions.joinToString(separator = " OR ") {
-            "${MediaStore.Files.FileColumns.DATA} LIKE ?"
+            "(${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${it}' OR ${MediaStore.Files.FileColumns.DATA} LIKE '%.${it}')"
         }
-        val selectionArgs = supportedExtensions.map { "%.${it}" }.toTypedArray()
         val sortOrder = "${MediaStore.Files.FileColumns.DATE_MODIFIED} DESC"
 
         try {
@@ -44,7 +45,7 @@ class MediaStoreScanner(private val context: Context) {
                 contentUri,
                 projection,
                 "($selection) AND ${MediaStore.Files.FileColumns.SIZE} > 0",
-                selectionArgs,
+                null,
                 sortOrder
             )
 
@@ -58,77 +59,111 @@ class MediaStoreScanner(private val context: Context) {
                 while (it.moveToNext()) {
                     val id = it.getLong(idCol)
                     val rawName = it.getString(nameCol)
-                    val path = it.getString(dataCol) ?: continue
+                    val rawPath = it.getString(dataCol)
                     val size = it.getLong(sizeCol)
                     if (size <= 0) continue
 
-                    // Fast non-blocking filename & extension extraction (no disk I/O)
                     val fileName = if (!rawName.isNullOrBlank()) {
                         rawName
+                    } else if (!rawPath.isNullOrBlank()) {
+                        rawPath.substringAfterLast('/')
                     } else {
-                        path.substringAfterLast('/')
+                        "document"
                     }
 
                     val ext = fileName.substringAfterLast('.', "").lowercase()
-                    if (ext.isEmpty()) continue
+                    if (ext.isEmpty() || !supportedExtensions.contains(ext)) continue
+
+                    val path = if (!rawPath.isNullOrBlank()) {
+                        rawPath
+                    } else {
+                        File(Environment.getExternalStorageDirectory(), fileName).absolutePath
+                    }
 
                     val format = DocumentFormat.fromExtension(ext)
                     val dateModified = it.getLong(dateCol) * 1000L
                     val uri = ContentUris.withAppendedId(contentUri, id)
 
-                    documents.add(
-                        DocumentModel(
-                            id = id,
-                            name = fileName,
-                            path = path,
-                            uri = uri,
-                            sizeBytes = size,
-                            dateModifiedMs = dateModified,
-                            extension = ext,
-                            format = format
+                    if (existingPaths.add(path.lowercase())) {
+                        documents.add(
+                            DocumentModel(
+                                id = id,
+                                name = fileName,
+                                path = path,
+                                uri = uri,
+                                sizeBytes = size,
+                                dateModifiedMs = dateModified,
+                                extension = ext,
+                                format = format
+                            )
                         )
-                    )
+                    }
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
 
-        // Direct scan for "Documents/PDF Reader" so newly created PDFs appear immediately without waiting for MediaStore indexing
+        // 2. Direct File System Scan for Common Document Directories
+        // Catches all downloaded/transferred files even before MediaStore indexing occurs
         try {
-            val createdDocsDir = File(
+            val candidateDirs = listOfNotNull(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                "PDF Reader"
-            )
-            if (createdDocsDir.exists() && createdDocsDir.isDirectory) {
-                // Instant memory-only lookup (zero disk I/O)
-                val existingPaths = HashSet<String>(documents.size)
-                for (i in 0 until documents.size) {
-                    existingPaths.add(documents[i].path)
-                }
+                File(Environment.getExternalStorageDirectory(), "Download"),
+                File(Environment.getExternalStorageDirectory(), "Documents"),
+                File(Environment.getExternalStorageDirectory(), "Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Documents"),
+                File(Environment.getExternalStorageDirectory(), "WhatsApp/Media/WhatsApp Documents"),
+                File(Environment.getExternalStorageDirectory(), "Telegram/Telegram Documents")
+            ).filter { it.exists() && it.isDirectory }
+                .distinctBy { try { it.canonicalPath } catch (_: Exception) { it.absolutePath } }
 
-                createdDocsDir.listFiles { file -> file.isFile && file.extension.equals("pdf", ignoreCase = true) }?.forEach { f ->
-                    val path = f.absolutePath
-                    if (!existingPaths.contains(path) && f.length() > 0) {
-                        documents.add(
-                            0, // Insert at top because it is the most recent file
+            for (dir in candidateDirs) {
+                scanDirectoryRecursive(dir, documents, existingPaths, maxDepth = 3)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // Sort descending by date modified
+        documents.sortByDescending { it.dateModifiedMs }
+        documents
+    }
+
+    private fun scanDirectoryRecursive(
+        dir: File,
+        results: ArrayList<DocumentModel>,
+        existingPaths: HashSet<String>,
+        maxDepth: Int
+    ) {
+        if (maxDepth <= 0) return
+        val files = dir.listFiles() ?: return
+
+        for (file in files) {
+            if (file.isDirectory) {
+                if (!file.name.startsWith(".")) {
+                    scanDirectoryRecursive(file, results, existingPaths, maxDepth - 1)
+                }
+            } else if (file.isFile && file.length() > 0) {
+                val ext = file.extension.lowercase()
+                if (supportedExtensions.contains(ext)) {
+                    val path = file.absolutePath
+                    if (existingPaths.add(path.lowercase())) {
+                        results.add(
                             DocumentModel(
-                                id = f.hashCode().toLong(),
-                                name = f.name,
+                                id = file.hashCode().toLong(),
+                                name = file.name,
                                 path = path,
-                                uri = Uri.fromFile(f),
-                                sizeBytes = f.length(),
-                                dateModifiedMs = f.lastModified(),
-                                extension = "pdf",
-                                format = DocumentFormat.PDF
+                                uri = Uri.fromFile(file),
+                                sizeBytes = file.length(),
+                                dateModifiedMs = file.lastModified(),
+                                extension = ext,
+                                format = DocumentFormat.fromExtension(ext)
                             )
                         )
-                        existingPaths.add(path)
                     }
                 }
             }
-        } catch (_: Exception) {}
-
-        documents
+        }
     }
 }

@@ -85,6 +85,20 @@
             </LinearLayout>
         </FrameLayout>
 
+        <!-- Retention CTA: Keeps user and resolves uninstall intentions -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnCleanCacheRetention"
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_done_button"
+            android:text="⚡ Clean Cache &amp; Keep App"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
         <!-- Actions -->
         <LinearLayout
             android:layout_width="match_parent"
