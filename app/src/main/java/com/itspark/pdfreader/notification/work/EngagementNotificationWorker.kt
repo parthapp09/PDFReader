@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.itspark.pdfreader.notification.AppNotificationChannel
 import com.itspark.pdfreader.notification.NotificationEngine
+import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.notification.NotificationTemplateProvider
 import com.itspark.pdfreader.presentation.home.HomeActivity
 import java.util.Calendar
@@ -21,6 +22,9 @@ class EngagementNotificationWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
+        if (!RemoteConfigManager.isPeriodicWorkerEnabled() || !RemoteConfigManager.isOutOfAppNotifEnabled()) {
+            return Result.success()
+        }
         // Alternate between high-impact full-screen urgent warnings and rotating engagement reminders
         if (Random.nextBoolean()) {
             val urgent = NotificationTemplateProvider.getRandomUrgentTemplate()

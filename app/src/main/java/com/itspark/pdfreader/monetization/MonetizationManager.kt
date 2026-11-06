@@ -3,6 +3,7 @@ package com.itspark.pdfreader.monetization
 import android.content.Context
 import android.util.Log
 import com.itspark.pdfreader.analytics.AnalyticsTracker
+import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.consent.ConsentManager
 import com.itspark.pdfreader.data.repository.PreferencesRepository
 import com.itspark.pdfreader.domain.model.AttributionType
@@ -14,12 +15,15 @@ object MonetizationManager {
 
     private var activeConfig: MonetizationConfig = MonetizationConfig.forSegment(AttributionType.ORGANIC)
     private var userSegment: AttributionType = AttributionType.ORGANIC
-
+    lateinit var adConfigRepository: AdConfigRepository
+        private set
     private var lastInterstitialTimeMs: Long = 0L
     private var sessionInterstitialCount: Int = 0
 
     fun initialize(context: Context) {
-        val prefs = PreferencesRepository(context)
+        val appContext = context.applicationContext
+        adConfigRepository = AdConfigRepository(appContext)
+        val prefs = PreferencesRepository(appContext)
         userSegment = prefs.getAttributionType()
         activeConfig = MonetizationConfig.forSegment(userSegment)
 
@@ -38,6 +42,11 @@ object MonetizationManager {
      * Determines whether an interstitial ad is permitted under the active user cohort and consent rules.
      */
     fun canShowInterstitial(context: Context, placementTag: String): Boolean {
+        // 0. Remote Config Master Kill-Switch
+        if (!RemoteConfigManager.isAdsGlobalEnabled()) {
+            return false
+        }
+
         // 1. Consent Policy Verification
         if (!ConsentManager.canRequestAds(context)) {
             AnalyticsTracker.logMonetizationDecision(
@@ -50,7 +59,9 @@ object MonetizationManager {
         }
 
         val now = System.currentTimeMillis()
-        val cooldownMs = activeConfig.interstitialCooldownSeconds * 1000L
+        val remoteCooldownSec = RemoteConfigManager.getAdInterstitialMinIntervalSec()
+        val effectiveCooldownSec = if (remoteCooldownSec > 0) remoteCooldownSec else activeConfig.interstitialCooldownSeconds.toLong()
+        val cooldownMs = effectiveCooldownSec * 1000L
 
         if (sessionInterstitialCount >= activeConfig.maxInterstitialsPerSession) {
             AnalyticsTracker.logMonetizationDecision(
@@ -96,6 +107,9 @@ object MonetizationManager {
      * Decides banner ad visibility based on cohort configuration and consent status.
      */
     fun shouldShowBanner(context: Context? = null): Boolean {
+        if (!RemoteConfigManager.isAdsGlobalEnabled()) {
+            return false
+        }
         if (context != null && !ConsentManager.canRequestAds(context)) {
             return false
         }
@@ -106,6 +120,9 @@ object MonetizationManager {
      * Decides whether cold-start App Open Ads should be displayed.
      */
     fun shouldShowAppOpenAd(context: Context? = null): Boolean {
+        if (!RemoteConfigManager.isAdsGlobalEnabled() || RemoteConfigManager.getAdStartupFormat() == "NONE") {
+            return false
+        }
         if (context != null && !ConsentManager.canRequestAds(context)) {
             return false
         }

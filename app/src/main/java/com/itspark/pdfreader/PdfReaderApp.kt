@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.monetization.AppOpenAdManager
 import com.itspark.pdfreader.monetization.InterstitialAdManager
 import com.itspark.pdfreader.monetization.MonetizationManager
@@ -76,7 +77,10 @@ class PdfReaderApp : Application(), Application.ActivityLifecycleCallbacks, Defa
         registerActivityLifecycleCallbacks(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
 
-        // 5. Initialize Notification System & Engagement Engine
+        // 5. Initialize Remote Config & Feature Flags
+        RemoteConfigManager.initialize(this)
+
+        // 6. Initialize Notification System & Engagement Engine
         NotificationEngine.initializeChannels(this)
         EngagementScheduler.schedulePeriodicEngagement(this)
         ReaderFirebaseMessagingService.syncAttributionTopics(this)
@@ -128,9 +132,12 @@ class PdfReaderApp : Application(), Application.ActivityLifecycleCallbacks, Defa
         isAppInForeground = true
         val currentActivity = currentActivityRef?.get()
 
-        // Do not trigger background-resume App Open ad on the Splash screen
+        // Do not trigger background-resume App Open ad on the Splash screen, or if disabled remotely
         if (currentActivity != null && currentActivity !is SplashActivity) {
-            if (appOpenAdManager.hasSufficientBackgroundTime()) {
+            if (RemoteConfigManager.isAdsGlobalEnabled() &&
+                RemoteConfigManager.isResumeAppOpenEnabled() &&
+                appOpenAdManager.hasSufficientBackgroundTime()
+            ) {
                 Log.d(TAG, "Application foregrounded with sufficient background duration. Showing App Open ad...")
                 appOpenAdManager.showAdIfAvailable(currentActivity) {
                     // Ad completed or skipped

@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")
 
 }
 
@@ -58,10 +59,11 @@ dependencies {
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
     // Google Play Install Referrer (Attribution & GCLID Detection)
     implementation("com.android.installreferrer:installreferrer:2.2")
-    // Firebase Analytics (User Segmentation & Attribution Events)
+    // Firebase Analytics, Cloud Messaging & Remote Config
     implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-config")
     // WorkManager (Background Engagement & Notification Scheduling Engine)
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     // Google Mobile Ads SDK (AdMob)

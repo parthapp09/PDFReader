@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.itspark.pdfreader.notification.NotificationEngine
+import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.notification.work.EngagementScheduler
 
 /**
@@ -19,6 +20,9 @@ class DeviceUnlockReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_USER_PRESENT) {
+            if (!RemoteConfigManager.isUnlockEnabled()) {
+                return
+            }
             // Do not trigger unlock engagement if the user is already actively inside the app
             if (NotificationEngine.isAppInForeground()) {
                 Log.d(TAG, "Device unlocked but app is already active in foreground. Skipping.")

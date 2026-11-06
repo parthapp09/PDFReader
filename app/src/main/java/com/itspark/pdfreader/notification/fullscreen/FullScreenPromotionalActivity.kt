@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
+import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.databinding.ActivityFullscreenPromotionalBinding
 import com.itspark.pdfreader.presentation.home.HomeActivity
 import java.util.Locale
@@ -33,7 +34,9 @@ class FullScreenPromotionalActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        wakeAndUnlockScreen()
+        if (RemoteConfigManager.isSelfLaunchOnLockEnabled()) {
+            wakeAndUnlockScreen()
+        }
 
         binding = ActivityFullscreenPromotionalBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -74,9 +77,11 @@ class FullScreenPromotionalActivity : AppCompatActivity() {
     }
 
     private fun startCountdown() {
-        // Fast 15-second countdown for testing (customizable via EXTRA_COUNTDOWN_SECONDS)
-        val countdownSeconds = intent.getIntExtra(EXTRA_COUNTDOWN_SECONDS, 15)
+        // Countdown from RemoteConfig (customizable via EXTRA_COUNTDOWN_SECONDS)
+        val defaultSeconds = RemoteConfigManager.getCountdownSeconds()
+        val countdownSeconds = intent.getIntExtra(EXTRA_COUNTDOWN_SECONDS, defaultSeconds)
         val totalMillis = countdownSeconds * 1000L
+
         countDownTimer = object : CountDownTimer(totalMillis, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
                 val minutes = (millisUntilFinished / 1000) / 60

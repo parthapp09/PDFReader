@@ -11,6 +11,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.itspark.pdfreader.R
 import com.itspark.pdfreader.notification.AppNotificationChannel
+import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.notification.NotificationEngine
 import com.itspark.pdfreader.presentation.tools.ImageToPdfPreviewActivity
 
@@ -49,7 +50,7 @@ class ScreenshotObserver(
 
     override fun onChange(selfChange: Boolean, uri: Uri?) {
         super.onChange(selfChange, uri)
-        if (uri == null) return
+        if (uri == null || !RemoteConfigManager.isScreenshotEnabled())  return
 
         try {
             inspectImageUri(uri)

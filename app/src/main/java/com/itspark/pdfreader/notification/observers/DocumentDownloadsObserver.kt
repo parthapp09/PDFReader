@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import com.itspark.pdfreader.R
 import com.itspark.pdfreader.notification.AppNotificationChannel
 import com.itspark.pdfreader.notification.NotificationEngine
+import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.presentation.viewer.PdfViewerActivity
 
 /**
@@ -53,6 +54,9 @@ class DocumentDownloadsObserver(
 
     override fun onChange(selfChange: Boolean, uri: Uri?) {
         super.onChange(selfChange, uri)
+        if (!RemoteConfigManager.isDownloadsEnabled()) {
+            return
+        }
         // If the user is currently in the app, the Home list already updates live
         if (NotificationEngine.isAppInForeground()) {
             return

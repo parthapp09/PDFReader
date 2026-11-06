@@ -191,13 +191,13 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun applyCohortMonetizationRules() {
-        if (!MonetizationManager.shouldShowBanner(this)) {
+        val configRepo = AdConfigRepository(this)
+        if (!MonetizationManager.shouldShowBanner(this) || !configRepo.isPlacementEnabled(AdPlacement.HOME_BOTTOM_BANNER)) {
             binding.layoutBottomBannerAd.visibility = View.GONE
             return
         }
 
         // Dynamic Ad Format Selection: Evaluates server/remote format preference
-        val configRepo = AdConfigRepository(this)
         val format = configRepo.getPlacementFormat(AdPlacement.HOME_BOTTOM_BANNER, isFirstLaunch = prefs.isFirstLaunch)
 
         when (format) {
@@ -511,8 +511,7 @@ class HomeActivity : AppCompatActivity() {
                     Toast.LENGTH_LONG
                 ).show()
             }
-            // Schedules exit notification to fire 1.2s after closing, cleanly dropping down on the home screen
-            NotificationEngine.showDelayedExitNotification(applicationContext)
+            // Schedules exit notification to fire after closing, cleanly dropping down on the home screen            NotificationEngine.showDelayedExitNotification(applicationContext)
             finish()
         }
 

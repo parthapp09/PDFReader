@@ -13,12 +13,14 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.itspark.pdfreader.PdfReaderApp
 import com.itspark.pdfreader.analytics.AnalyticsTracker
+import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.consent.ConsentManager
 import com.itspark.pdfreader.data.attribution.InstallAttributionManager
 import com.itspark.pdfreader.data.repository.PreferencesRepository
 import com.itspark.pdfreader.data.source.DocumentCache
 import com.itspark.pdfreader.data.source.MediaStoreScanner
 import com.itspark.pdfreader.databinding.ActivitySplashBinding
+import com.itspark.pdfreader.monetization.AdPlacement
 import com.itspark.pdfreader.monetization.MonetizationManager
 import com.itspark.pdfreader.presentation.home.HomeActivity
 import com.itspark.pdfreader.presentation.language.LanguageActivity
@@ -82,8 +84,9 @@ class SplashActivity : AppCompatActivity() {
 
     private fun animateProgressBar() {
         binding.progressBar.progress = 0
+        val duration = RemoteConfigManager.getSplashDelayMs().coerceAtLeast(1000L)
         val animator = ObjectAnimator.ofInt(binding.progressBar, "progress", 0, 100)
-        animator.duration = SPLASH_DURATION_MS
+        animator.duration = duration
         animator.interpolator = DecelerateInterpolator()
         animator.start()
     }
@@ -118,16 +121,25 @@ class SplashActivity : AppCompatActivity() {
             // 4. Initialize Cohort Monetization Decision Engine
             MonetizationManager.initialize(this@SplashActivity)
 
-            // Start preloading the cold start ad in parallel while the 2.5s progress bar animates
-            if (MonetizationManager.shouldShowAppOpenAd(this@SplashActivity) &&
-                ConsentManager.canRequestAds(this@SplashActivity)
-            ) {
-                PdfReaderApp.instance.appOpenAdManager.preloadColdStartAd(this@SplashActivity)
+            // Start preloading the cold start ad in parallel while the progress bar animates
+            val startupFormat = RemoteConfigManager.getAdStartupFormat().uppercase()
+            if (RemoteConfigManager.isAdsGlobalEnabled() && ConsentManager.canRequestAds(this@SplashActivity)) {
+                when (startupFormat) {
+                    "INTERSTITIAL" -> {
+                        PdfReaderApp.instance.interstitialAdManager.preload(AdPlacement.INTERSTITIAL_OPEN_DOC)
+                    }
+                    "APP_OPEN" -> {
+                        if (MonetizationManager.shouldShowAppOpenAd(this@SplashActivity)) {
+                            PdfReaderApp.instance.appOpenAdManager.preloadColdStartAd(this@SplashActivity)
+                        }
+                    }
+                }
             }
 
             // 5. Ensure splash progress bar animation completes smoothly
+            val targetDuration = RemoteConfigManager.getSplashDelayMs().coerceAtLeast(1000L)
             val elapsed = System.currentTimeMillis() - startTime
-            val remainingDelay = (SPLASH_DURATION_MS - elapsed).coerceAtLeast(0L)
+            val remainingDelay = (targetDuration - elapsed).coerceAtLeast(0L)
             if (remainingDelay > 0) {
                 delay(remainingDelay.milliseconds)
             }
@@ -152,14 +164,30 @@ class SplashActivity : AppCompatActivity() {
                 finish()
             }
 
-            // 6. Cold Start App Open Ad
-            if (MonetizationManager.shouldShowAppOpenAd(this@SplashActivity) &&
-                ConsentManager.canRequestAds(this@SplashActivity)
-            ) {
-                com.itspark.pdfreader.PdfReaderApp.instance.appOpenAdManager.loadAndShowColdStart(
-                    activity = this@SplashActivity,
-                    onComplete = { proceedToNextScreen() }
-                )
+            // 6. Cold Start Ad Presentation (App Open vs Interstitial vs None)
+            if (RemoteConfigManager.isAdsGlobalEnabled() && ConsentManager.canRequestAds(this@SplashActivity)) {
+                when (startupFormat) {
+                    "INTERSTITIAL" -> {
+                        PdfReaderApp.instance.interstitialAdManager.showIfAllowed(
+                            activity = this@SplashActivity,
+                            placement = AdPlacement.INTERSTITIAL_OPEN_DOC,
+                            onAdClosed = { proceedToNextScreen() }
+                        )
+                    }
+                    "APP_OPEN" -> {
+                        if (MonetizationManager.shouldShowAppOpenAd(this@SplashActivity)) {
+                            PdfReaderApp.instance.appOpenAdManager.loadAndShowColdStart(
+                                activity = this@SplashActivity,
+                                onComplete = { proceedToNextScreen() }
+                            )
+                        } else {
+                            proceedToNextScreen()
+                        }
+                    }
+                    else -> {
+                        proceedToNextScreen()
+                    }
+                }
             } else {
                 proceedToNextScreen()
             }

@@ -3,6 +3,7 @@ package com.itspark.pdfreader.monetization
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.itspark.pdfreader.config.RemoteConfigManager
 import org.json.JSONObject
 
 /**
@@ -30,9 +31,27 @@ class AdConfigRepository(context: Context) {
     }
 
     /**
-     * Checks if a placement is enabled remotely. Defaults to true.
+     * Checks if a placement is enabled remotely. Honors master kill-switch and individual flags.
      */
     fun isPlacementEnabled(placement: AdPlacement): Boolean {
+        if (!RemoteConfigManager.isAdsGlobalEnabled()) {
+            return false
+        }
+
+        // Check placement-specific remote flags
+        val flagEnabled = when (placement) {
+            AdPlacement.SPLASH_APP_OPEN -> RemoteConfigManager.getAdStartupFormat() != "NONE"
+            AdPlacement.RESUME_APP_OPEN -> RemoteConfigManager.isResumeAppOpenEnabled()
+            AdPlacement.HOME_BOTTOM_BANNER -> RemoteConfigManager.isHomeBannerEnabled()
+            AdPlacement.VIEWER_BOTTOM_BANNER -> RemoteConfigManager.isViewerBannerEnabled()
+            AdPlacement.NATIVE_EXIT_DIALOG -> RemoteConfigManager.isExitDialogNativeEnabled()
+            AdPlacement.NATIVE_AI_FEATURE -> RemoteConfigManager.isAiDialogNativeEnabled()
+            AdPlacement.REWARDED_VIP_FEATURE -> RemoteConfigManager.isVipRewardedEnabled()
+            else -> true
+        }
+
+        if (!flagEnabled) return false
+
         return prefs.getBoolean(KEY_PREFIX_ENABLED + placement.placementKey, true)
     }
 
@@ -42,6 +61,12 @@ class AdConfigRepository(context: Context) {
      * as well as runtime server-side format overrides.
      */
     fun getPlacementFormat(placement: AdPlacement, isFirstLaunch: Boolean = false): AdFormatType {
+        if (placement == AdPlacement.SPLASH_APP_OPEN) {
+            val startupFormat = RemoteConfigManager.getAdStartupFormat()
+            if (startupFormat.equals("INTERSTITIAL", ignoreCase = true)) {
+                return AdFormatType.INTERSTITIAL
+            }
+        }
         if (isFirstLaunch) {
             val firstLaunchFormatStr = prefs.getString(KEY_PREFIX_FIRST_LAUNCH_FORMAT + placement.placementKey, null)
             if (firstLaunchFormatStr != null) {
@@ -71,10 +96,11 @@ class AdConfigRepository(context: Context) {
     }
 
     /**
-     * Sets an ad loading timeout in milliseconds.
+     * Sets an ad loading timeout in milliseconds. Checks RemoteConfig first.
      */
     fun getAdLoadingTimeoutMs(): Long {
-        return prefs.getLong(KEY_GLOBAL_TIMEOUT, DEFAULT_TIMEOUT_MS)
+        val remoteTimeout = RemoteConfigManager.getAdLoadingTimeoutMs()
+        return if (remoteTimeout > 0) remoteTimeout else prefs.getLong(KEY_GLOBAL_TIMEOUT, DEFAULT_TIMEOUT_MS)
     }
 
     /**

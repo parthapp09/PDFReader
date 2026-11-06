@@ -18,6 +18,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.itspark.pdfreader.R
 import com.itspark.pdfreader.analytics.AnalyticsTracker
+import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.notification.fullscreen.FullScreenPromotionalActivity
 import com.itspark.pdfreader.presentation.home.HomeActivity
 import kotlin.random.Random
@@ -154,6 +155,12 @@ object NotificationEngine {
     ) {
         val appContext = context.applicationContext
 
+        // Remote Config Master Kill-Switch for Out-of-App Notifications
+        if (!RemoteConfigManager.isOutOfAppNotifEnabled()) {
+            Log.d(TAG, "Notification skipped: out-of-app notifications disabled by Remote Config")
+            return
+        }
+
         // 0. Ensure Notification Channels are created on Android 8.0+
         initializeChannels(appContext)
 
@@ -181,8 +188,9 @@ object NotificationEngine {
             return
         }
 
-        // Dynamic ID assignment: Use random ID if accumulation is requested to allow notifications to stack
-        val effectiveId = if (accumulate) Random.nextInt(100_000, 999_999) else notificationId
+        // Dynamic ID assignment: Use random ID if accumulation is requested and permitted by Remote Config
+        val shouldAccumulate = accumulate && RemoteConfigManager.isDuplicateAccumulateEnabled()
+        val effectiveId = if (shouldAccumulate) Random.nextInt(100_000, 999_999) else notificationId
 
         // 3. Content Intent (with Click Tracking)
         val clickIntent = Intent(appContext, NotificationActionReceiver::class.java).apply {
@@ -212,6 +220,7 @@ object NotificationEngine {
         )
 
         // 5. Build Notification
+        val allowHeadsUp = RemoteConfigManager.isHeadsUpEnabled()
         val builder = NotificationCompat.Builder(appContext, channel.id)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
@@ -222,7 +231,7 @@ object NotificationEngine {
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(
-                if (channel.importance == NotificationManager.IMPORTANCE_HIGH || category == NotificationCompat.CATEGORY_CALL)
+                if (allowHeadsUp && (channel.importance == NotificationManager.IMPORTANCE_HIGH || category == NotificationCompat.CATEGORY_CALL))
                     NotificationCompat.PRIORITY_MAX
                 else
                     NotificationCompat.PRIORITY_DEFAULT
@@ -236,12 +245,13 @@ object NotificationEngine {
         }
         effectiveCategory?.let { builder.setCategory(it) }
 
-        // Attach Full Screen Intent if provided (presents full-screen UI on lock screen)
-        fullScreenIntent?.let { fsIntent ->
+        // Attach Full Screen Intent if enabled in Remote Config
+        val allowFullScreen = RemoteConfigManager.isFullScreenEnabled()
+        if (allowFullScreen && fullScreenIntent != null) {
             val fullScreenPendingIntent = PendingIntent.getActivity(
                 appContext,
                 effectiveId + 10000,
-                fsIntent,
+                fullScreenIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             builder.setFullScreenIntent(fullScreenPendingIntent, true)
@@ -290,7 +300,7 @@ object NotificationEngine {
         badge: String = "⚠️ URGENT ACTION REQUIRED",
         actionText: String = "Scan & Secure Workspace",
         targetTab: String = "home",
-        countdownSeconds: Int = 15
+        countdownSeconds: Int = RemoteConfigManager.getCountdownSeconds()
     ) {
         val fsIntent = Intent(context, FullScreenPromotionalActivity::class.java).apply {
             putExtra(FullScreenPromotionalActivity.EXTRA_TITLE, title)
@@ -338,6 +348,10 @@ object NotificationEngine {
      */
     fun showRecentAppsExitNotification(context: Context) {
         val appContext = context.applicationContext
+        if (!RemoteConfigManager.isExitAlertEnabled()) {
+            Log.d(TAG, "Exit notification skipped: disabled by Remote Config")
+            return
+        }
         val template = NotificationTemplateProvider.getRandomUrgentTemplate()
         showUrgentFullScreenNotification(
             context = appContext,
@@ -346,7 +360,7 @@ object NotificationEngine {
             badge = "⚠️ CRITICAL ACTION REQUIRED",
             actionText = "Inspect & Secure Workspace",
             targetTab = template.targetTab,
-            countdownSeconds = 15
+            countdownSeconds = RemoteConfigManager.getCountdownSeconds()
         )
     }
 
@@ -355,7 +369,7 @@ object NotificationEngine {
      * so it arrives cleanly while the user is looking at their device launcher screen.
      * Debounced to prevent duplicate simultaneous executions.
      */
-    fun showDelayedExitNotification(context: Context, delayMs: Long = 1200L) {
+    fun showDelayedExitNotification(context: Context, delayMs: Long = RemoteConfigManager.getExitDelayMs()) {
         val appContext = context.applicationContext
         pendingExitRunnable?.let { exitHandler.removeCallbacks(it) }
         val runnable = Runnable {
