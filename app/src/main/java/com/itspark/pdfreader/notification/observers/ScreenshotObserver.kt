@@ -1,6 +1,5 @@
 package com.itspark.pdfreader.notification.observers
 
-import android.app.PendingIntent
 import android.content.Context
 import android.database.ContentObserver
 import android.net.Uri
@@ -10,8 +9,8 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.itspark.pdfreader.R
-import com.itspark.pdfreader.notification.AppNotificationChannel
 import com.itspark.pdfreader.config.RemoteConfigManager
+import com.itspark.pdfreader.notification.AppNotificationChannel
 import com.itspark.pdfreader.notification.NotificationEngine
 import com.itspark.pdfreader.presentation.tools.ImageToPdfPreviewActivity
 

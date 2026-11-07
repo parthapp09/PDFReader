@@ -8,6 +8,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import com.itspark.pdfreader.domain.model.DocumentFormat
 import com.itspark.pdfreader.domain.model.DocumentModel
+import com.itspark.pdfreader.notification.observers.DirectoryWatcherManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -104,20 +105,10 @@ class MediaStoreScanner(private val context: Context) {
             e.printStackTrace()
         }
 
-        // 2. Direct File System Scan for Common Document Directories
+        // 2. Direct File System Scan for Common Document & Messaging App Directories
         // Catches all downloaded/transferred files even before MediaStore indexing occurs
         try {
-            val candidateDirs = listOfNotNull(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                File(Environment.getExternalStorageDirectory(), "Download"),
-                File(Environment.getExternalStorageDirectory(), "Documents"),
-                File(Environment.getExternalStorageDirectory(), "Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Documents"),
-                File(Environment.getExternalStorageDirectory(), "WhatsApp/Media/WhatsApp Documents"),
-                File(Environment.getExternalStorageDirectory(), "Telegram/Telegram Documents")
-            ).filter { it.exists() && it.isDirectory }
-                .distinctBy { try { it.canonicalPath } catch (_: Exception) { it.absolutePath } }
-
+            val candidateDirs = DirectoryWatcherManager.resolveCandidateDirectories()
             for (dir in candidateDirs) {
                 scanDirectoryRecursive(dir, documents, existingPaths, maxDepth = 3)
             }

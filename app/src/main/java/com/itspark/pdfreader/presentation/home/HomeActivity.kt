@@ -18,6 +18,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -28,8 +30,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.GridLayoutManager
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.tabs.TabLayout
 import com.itspark.pdfreader.PdfReaderApp
 import com.itspark.pdfreader.R
+import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.data.repository.DocumentRepositoryImpl
 import com.itspark.pdfreader.data.repository.PreferencesRepository
 import com.itspark.pdfreader.data.source.MediaStoreScanner
@@ -52,7 +58,6 @@ import com.itspark.pdfreader.notification.NotificationEngine
 import com.itspark.pdfreader.presentation.home.adapter.DocumentAdapter
 import com.itspark.pdfreader.presentation.home.dialog.PermissionAccessDialog
 import com.itspark.pdfreader.presentation.language.LanguageActivity
-import com.itspark.pdfreader.presentation.tools.ImageToPdfConverter
 import com.itspark.pdfreader.presentation.tools.ImageToPdfPreviewActivity
 import com.itspark.pdfreader.presentation.tools.PdfToolItem
 import com.itspark.pdfreader.presentation.tools.PdfToolType
@@ -60,12 +65,6 @@ import com.itspark.pdfreader.presentation.tools.PdfToolsAdapter
 import com.itspark.pdfreader.presentation.tools.PdfToolsDataProvider
 import com.itspark.pdfreader.presentation.utils.FormatUtils
 import com.itspark.pdfreader.presentation.viewer.PdfViewerActivity
-import androidx.activity.OnBackPressedCallback
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.recyclerview.widget.GridLayoutManager
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.tabs.TabLayout
-import com.itspark.pdfreader.config.RemoteConfigManager
 import kotlinx.coroutines.launch
 import java.io.File
 

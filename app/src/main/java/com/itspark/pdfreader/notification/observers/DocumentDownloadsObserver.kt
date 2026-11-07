@@ -1,20 +1,14 @@
 package com.itspark.pdfreader.notification.observers
 
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
-import androidx.core.app.NotificationCompat
-import com.itspark.pdfreader.R
-import com.itspark.pdfreader.notification.AppNotificationChannel
-import com.itspark.pdfreader.notification.NotificationEngine
 import com.itspark.pdfreader.config.RemoteConfigManager
-import com.itspark.pdfreader.presentation.viewer.PdfViewerActivity
+import com.itspark.pdfreader.notification.NotificationEngine
 
 /**
  * Monitors MediaStore.Files for newly downloaded or received documents.
@@ -103,41 +97,17 @@ class DocumentDownloadsObserver(
                 if (id != lastObservedFileId && (nowSec - dateAdded) < 20 && dateAdded != lastObservedTimestamp) {
                     lastObservedFileId = id
                     lastObservedTimestamp = dateAdded
-                    dispatchNewDocumentNotification(name, path)
+
+                    val nowMs = System.currentTimeMillis()
+                    val lastNotified = DirectoryWatcherManager.recentNotifiedFiles[path]
+                    if (lastNotified == null || (nowMs - lastNotified) >= 15000L) {
+                        DirectoryWatcherManager.recentNotifiedFiles[path] = nowMs
+                        val source = MessagingApp.resolveSource(path)
+                        Log.i(TAG, "New document detected: $name ($path) via ${source.displayName}")
+                        NotificationEngine.dispatchIncomingDocumentNotification(context, name, path, source)
+                    }
                 }
             }
         }
-    }
-
-    private fun dispatchNewDocumentNotification(fileName: String, filePath: String) {
-        Log.i(TAG, "New document detected: $fileName ($filePath)")
-
-        val viewerIntent = Intent(context, PdfViewerActivity::class.java).apply {
-            putExtra("pdf_path", filePath)
-            putExtra("pdf_name", fileName)
-        }
-
-        val openAction = NotificationCompat.Action.Builder(
-            R.drawable.ic_notification,
-            "Open Document",
-            NotificationEngine.createActionPendingIntent(
-                context = context,
-                notificationId = NotificationEngine.ID_NEW_FILE_EVENT,
-                channelId = AppNotificationChannel.FILES.id,
-                targetIntent = viewerIntent,
-                requestCode = 202
-            )
-        ).build()
-
-        NotificationEngine.showNotification(
-            context = context,
-            notificationId = NotificationEngine.ID_NEW_FILE_EVENT,
-            channel = AppNotificationChannel.FILES,
-            title = "New Document Received",
-            body = "Tap to view and read $fileName",
-            deepLinkIntent = viewerIntent,
-            actions = listOf(openAction),
-            forceBypassCooldown = true
-        )
     }
 }

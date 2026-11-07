@@ -28,11 +28,13 @@ import com.itspark.pdfreader.databinding.ActivityPdfViewerBinding
 import com.itspark.pdfreader.databinding.DialogGoToPageBinding
 import com.itspark.pdfreader.monetization.AdPlacement
 import com.itspark.pdfreader.monetization.BannerAdManager
+import com.itspark.pdfreader.notification.observers.MessagingApp
 import com.itspark.pdfreader.presentation.tools.DynamicShortcutManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import androidx.core.view.isVisible
 
 class PdfViewerActivity : AppCompatActivity() {
 
@@ -182,6 +184,14 @@ class PdfViewerActivity : AppCompatActivity() {
         }
         if (docName.isEmpty()) {
             docName = "Document.pdf"
+        }
+
+        val sourceAppName = intent.getStringExtra("source_app")
+        if (!sourceAppName.isNullOrEmpty()) {
+            try {
+                val app = MessagingApp.valueOf(sourceAppName)
+                Toast.makeText(this, "Opened via ${app.displayName}", Toast.LENGTH_SHORT).show()
+            } catch (_: Exception) {}
         }
     }
 
@@ -338,7 +348,7 @@ class PdfViewerActivity : AppCompatActivity() {
 
         // 4. Thumbnail toggle
         binding.btnBottomThumbnail.setOnClickListener {
-            val isVisible = binding.layoutThumbnails.visibility == View.VISIBLE
+            val isVisible = binding.layoutThumbnails.isVisible
             binding.layoutThumbnails.visibility = if (isVisible) View.GONE else View.VISIBLE
             if (!isVisible) {
                 binding.rvThumbnails.scrollToPosition(currentPage)
@@ -429,7 +439,7 @@ class PdfViewerActivity : AppCompatActivity() {
         binding.topBar.visibility = View.GONE
         binding.searchTopBar.visibility = View.VISIBLE
         binding.etSearchPdf.requestFocus()
-        val imm = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
         imm?.showSoftInput(binding.etSearchPdf, InputMethodManager.SHOW_IMPLICIT)
     }
 
@@ -442,7 +452,7 @@ class PdfViewerActivity : AppCompatActivity() {
         currentSearchIndex = 0
         pageAdapter?.clearSearchHighlights()
 
-        val imm = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
         imm?.hideSoftInputFromWindow(binding.etSearchPdf.windowToken, 0)
     }
 

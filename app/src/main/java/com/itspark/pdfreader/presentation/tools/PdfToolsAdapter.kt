@@ -6,7 +6,6 @@ import android.view.ViewGroup
 import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.itspark.pdfreader.databinding.ItemPdfToolBinding
-import com.itspark.pdfreader.presentation.tools.PdfToolItem
 
 class PdfToolsAdapter(
     private val tools: List<PdfToolItem>,

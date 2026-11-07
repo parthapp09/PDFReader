@@ -14,7 +14,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -22,7 +21,9 @@ import com.itspark.pdfreader.R
 import com.itspark.pdfreader.analytics.AnalyticsTracker
 import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.notification.fullscreen.FullScreenPromotionalActivity
+import com.itspark.pdfreader.notification.observers.MessagingApp
 import com.itspark.pdfreader.presentation.home.HomeActivity
+import com.itspark.pdfreader.presentation.viewer.PdfViewerActivity
 import kotlin.random.Random
 
 /**
@@ -390,6 +391,67 @@ object NotificationEngine {
     }
 
     /**
+     * Alias for showDelayedExitNotification.
+     */
+    fun scheduleDelayedExitAlert(context: Context, delayMs: Long = RemoteConfigManager.getExitDelayMs()) {
+        showDelayedExitNotification(context, delayMs)
+    }
+
+    /**
+     * Unified contextual notification dispatcher for newly downloaded or received documents
+     * (used by both MediaStore ContentObserver and low-level Linux FileObserver).
+     */
+    fun dispatchIncomingDocumentNotification(
+        context: Context,
+        fileName: String,
+        filePath: String,
+        source: MessagingApp
+    ) {
+        val appContext = context.applicationContext
+        val viewerIntent = Intent(appContext, PdfViewerActivity::class.java).apply {
+            putExtra("pdf_path", filePath)
+            putExtra("pdf_name", fileName)
+            putExtra("source_app", source.name)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        val openAction = NotificationCompat.Action.Builder(
+            R.drawable.ic_notification,
+            "Open Document",
+            createActionPendingIntent(
+                context = appContext,
+                notificationId = ID_NEW_FILE_EVENT,
+                channelId = AppNotificationChannel.FILES.id,
+                targetIntent = viewerIntent,
+                requestCode = 202
+            )
+        ).build()
+
+        val title = when (source) {
+            MessagingApp.DOCUMENTS_DIR -> "New Document Saved"
+            MessagingApp.GENERIC_DOWNLOAD -> "New Document Downloaded"
+            else -> "New ${source.displayName} Document"
+        }
+
+        val body = when (source) {
+            MessagingApp.DOCUMENTS_DIR -> "Tap to view and edit $fileName in Documents"
+            MessagingApp.GENERIC_DOWNLOAD -> "Tap to open and read $fileName"
+            else -> "Tap to read $fileName received via ${source.displayName}"
+        }
+
+        showNotification(
+            context = appContext,
+            notificationId = ID_NEW_FILE_EVENT,
+            channel = AppNotificationChannel.FILES,
+            title = title,
+            body = body,
+            deepLinkIntent = viewerIntent,
+            actions = listOf(openAction),
+            forceBypassCooldown = true
+        )
+    }
+
+    /**
      * Cancels a specific notification by ID.
      */
     fun cancelNotification(context: Context, notificationId: Int) {
@@ -415,7 +477,7 @@ object NotificationEngine {
         )
 
         return NotificationCompat.Builder(context, AppNotificationChannel.FOREGROUND_SERVICE.id)
-            .setSmallIcon(R.drawable.ic_nav_all_docs)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Document Reader Sync Active")
             .setContentText("Monitoring and indexing local documents for quick access")
             .setPriority(NotificationCompat.PRIORITY_LOW)

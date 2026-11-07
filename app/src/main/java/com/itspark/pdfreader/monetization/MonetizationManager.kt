@@ -15,8 +15,10 @@ object MonetizationManager {
 
     private var activeConfig: MonetizationConfig = MonetizationConfig.forSegment(AttributionType.ORGANIC)
     private var userSegment: AttributionType = AttributionType.ORGANIC
+
     lateinit var adConfigRepository: AdConfigRepository
         private set
+
     private var lastInterstitialTimeMs: Long = 0L
     private var sessionInterstitialCount: Int = 0
 
@@ -59,16 +61,24 @@ object MonetizationManager {
         }
 
         val now = System.currentTimeMillis()
+        val aggressiveness = RemoteConfigManager.getCohortAdAggressiveness()
+        val (cohortCooldown, cohortCap) = when (aggressiveness.uppercase()) {
+            "AGGRESSIVE" -> Pair(25L, 15)
+            "LIGHT" -> Pair(90L, 5)
+            else -> Pair(activeConfig.interstitialCooldownSeconds.toLong(), activeConfig.maxInterstitialsPerSession) // BALANCED
+        }
+
         val remoteCooldownSec = RemoteConfigManager.getAdInterstitialMinIntervalSec()
-        val effectiveCooldownSec = if (remoteCooldownSec > 0) remoteCooldownSec else activeConfig.interstitialCooldownSeconds.toLong()
+        val effectiveCooldownSec = if (remoteCooldownSec > 0) remoteCooldownSec else cohortCooldown
+        val effectiveCap = cohortCap
         val cooldownMs = effectiveCooldownSec * 1000L
 
-        if (sessionInterstitialCount >= activeConfig.maxInterstitialsPerSession) {
+        if (sessionInterstitialCount >= effectiveCap) {
             AnalyticsTracker.logMonetizationDecision(
                 context,
                 adType = "interstitial_$placementTag",
                 allowed = false,
-                reason = "session_cap_reached_${activeConfig.maxInterstitialsPerSession}"
+                reason = "session_cap_reached_${effectiveCap}_tier_$aggressiveness"
             )
             return false
         }

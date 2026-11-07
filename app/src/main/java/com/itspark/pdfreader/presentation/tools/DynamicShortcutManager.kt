@@ -11,7 +11,6 @@ import androidx.core.graphics.drawable.IconCompat
 import com.itspark.pdfreader.R
 import com.itspark.pdfreader.presentation.home.HomeActivity
 import com.itspark.pdfreader.presentation.splash.SplashActivity
-import com.itspark.pdfreader.presentation.tools.ImageToPdfPreviewActivity
 import com.itspark.pdfreader.presentation.viewer.PdfViewerActivity
 
 /**

@@ -67,6 +67,14 @@ class AdConfigRepository(context: Context) {
                 return AdFormatType.INTERSTITIAL
             }
         }
+        if (placement == AdPlacement.HOME_BOTTOM_BANNER) {
+            val bannerFormat = RemoteConfigManager.getHomeBannerFormat()
+            if (bannerFormat.equals("STANDARD", ignoreCase = true) || bannerFormat.equals("ADAPTIVE", ignoreCase = true)) {
+                return AdFormatType.STANDARD_BANNER
+            } else if (bannerFormat.equals("COLLAPSIBLE", ignoreCase = true)) {
+                return AdFormatType.COLLAPSIBLE_BANNER
+            }
+        }
         if (isFirstLaunch) {
             val firstLaunchFormatStr = prefs.getString(KEY_PREFIX_FIRST_LAUNCH_FORMAT + placement.placementKey, null)
             if (firstLaunchFormatStr != null) {

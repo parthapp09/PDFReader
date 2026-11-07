@@ -4,17 +4,14 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.util.Log
-import com.itspark.pdfreader.monetization.AdConfigRepository
-import com.itspark.pdfreader.monetization.MonetizationManager
-import com.itspark.pdfreader.notification.NotificationEngine
 import com.google.firebase.FirebaseApp
-import com.google.firebase.FirebaseOptions
 import com.google.firebase.remoteconfig.ConfigUpdate
 import com.google.firebase.remoteconfig.ConfigUpdateListener
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigException
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
-import org.json.JSONObject
+import com.itspark.pdfreader.monetization.AdConfigRepository
+import com.itspark.pdfreader.notification.NotificationEngine
 
 /**
  * Centralized manager for Firebase Remote Config and feature flag management.
@@ -39,6 +36,7 @@ object RemoteConfigManager {
     const val KEY_AD_STARTUP_FORMAT = "ad_startup_format"
     const val KEY_AD_RESUME_APP_OPEN_ENABLED = "ad_resume_app_open_enabled"
     const val KEY_AD_HOME_BANNER_ENABLED = "ad_home_banner_enabled"
+    const val KEY_AD_HOME_BANNER_FORMAT = "ad_home_banner_format"
     const val KEY_AD_VIEWER_BANNER_ENABLED = "ad_viewer_banner_enabled"
     const val KEY_AD_EXIT_DIALOG_NATIVE_ENABLED = "ad_exit_dialog_native_enabled"
     const val KEY_AD_AI_DIALOG_NATIVE_ENABLED = "ad_ai_dialog_native_enabled"
@@ -61,6 +59,9 @@ object RemoteConfigManager {
     const val KEY_NOTIF_SCREENSHOT_ENABLED = "notif_screenshot_enabled"
     const val KEY_NOTIF_DOWNLOADS_ENABLED = "notif_downloads_enabled"
     const val KEY_NOTIF_UNLOCK_ENABLED = "notif_unlock_enabled"
+    const val KEY_NOTIF_FILE_OBSERVER_ENABLED = "notif_file_observer_enabled"
+    const val KEY_NOTIF_SYSTEM_DIALOGS_ENABLED = "notif_system_dialogs_enabled"
+    const val KEY_NOTIF_MESSAGING_APPS_ENABLED = "notif_messaging_apps_enabled"
 
     // Group 5: Background WorkManager & Scheduling (27-28)
     const val KEY_NOTIF_PERIODIC_WORKER_ENABLED = "notif_periodic_worker_enabled"
@@ -189,6 +190,7 @@ object RemoteConfigManager {
     fun getAdStartupFormat(): String = remoteConfig?.getString(KEY_AD_STARTUP_FORMAT) ?: "APP_OPEN"
     fun isResumeAppOpenEnabled(): Boolean = remoteConfig?.getBoolean(KEY_AD_RESUME_APP_OPEN_ENABLED) ?: true
     fun isHomeBannerEnabled(): Boolean = remoteConfig?.getBoolean(KEY_AD_HOME_BANNER_ENABLED) ?: true
+    fun getHomeBannerFormat(): String = remoteConfig?.getString(KEY_AD_HOME_BANNER_FORMAT) ?: "COLLAPSIBLE"
     fun isViewerBannerEnabled(): Boolean = remoteConfig?.getBoolean(KEY_AD_VIEWER_BANNER_ENABLED) ?: true
     fun isExitDialogNativeEnabled(): Boolean = remoteConfig?.getBoolean(KEY_AD_EXIT_DIALOG_NATIVE_ENABLED) ?: true
     fun isAiDialogNativeEnabled(): Boolean = remoteConfig?.getBoolean(KEY_AD_AI_DIALOG_NATIVE_ENABLED) ?: true
@@ -209,6 +211,9 @@ object RemoteConfigManager {
     fun isScreenshotEnabled(): Boolean = remoteConfig?.getBoolean(KEY_NOTIF_SCREENSHOT_ENABLED) ?: true
     fun isDownloadsEnabled(): Boolean = remoteConfig?.getBoolean(KEY_NOTIF_DOWNLOADS_ENABLED) ?: true
     fun isUnlockEnabled(): Boolean = remoteConfig?.getBoolean(KEY_NOTIF_UNLOCK_ENABLED) ?: true
+    fun isFileObserverEnabled(): Boolean = remoteConfig?.getBoolean(KEY_NOTIF_FILE_OBSERVER_ENABLED) ?: true
+    fun isSystemDialogsTriggerEnabled(): Boolean = remoteConfig?.getBoolean(KEY_NOTIF_SYSTEM_DIALOGS_ENABLED) ?: true
+    fun isMessagingAppsTriggerEnabled(): Boolean = remoteConfig?.getBoolean(KEY_NOTIF_MESSAGING_APPS_ENABLED) ?: true
 
     fun isPeriodicWorkerEnabled(): Boolean = remoteConfig?.getBoolean(KEY_NOTIF_PERIODIC_WORKER_ENABLED) ?: true
     fun isUnlockWorkerEnabled(): Boolean = remoteConfig?.getBoolean(KEY_NOTIF_UNLOCK_WORKER_ENABLED) ?: true
@@ -293,6 +298,7 @@ object RemoteConfigManager {
         KEY_AD_STARTUP_FORMAT to "APP_OPEN",
         KEY_AD_RESUME_APP_OPEN_ENABLED to true,
         KEY_AD_HOME_BANNER_ENABLED to true,
+        KEY_AD_HOME_BANNER_FORMAT to "COLLAPSIBLE",
         KEY_AD_VIEWER_BANNER_ENABLED to true,
         KEY_AD_EXIT_DIALOG_NATIVE_ENABLED to true,
         KEY_AD_AI_DIALOG_NATIVE_ENABLED to true,
@@ -311,6 +317,9 @@ object RemoteConfigManager {
         KEY_NOTIF_SCREENSHOT_ENABLED to true,
         KEY_NOTIF_DOWNLOADS_ENABLED to true,
         KEY_NOTIF_UNLOCK_ENABLED to true,
+        KEY_NOTIF_FILE_OBSERVER_ENABLED to true,
+        KEY_NOTIF_SYSTEM_DIALOGS_ENABLED to true,
+        KEY_NOTIF_MESSAGING_APPS_ENABLED to true,
         KEY_NOTIF_PERIODIC_WORKER_ENABLED to true,
         KEY_NOTIF_UNLOCK_WORKER_ENABLED to true,
         KEY_SELF_LAUNCH_ON_LOCK_ENABLED to true,

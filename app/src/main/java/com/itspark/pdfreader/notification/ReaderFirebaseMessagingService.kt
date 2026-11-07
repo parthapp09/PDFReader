@@ -3,15 +3,14 @@ package com.itspark.pdfreader.notification
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.FirebaseMessagingService
+import com.google.firebase.messaging.RemoteMessage
 import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.data.repository.PreferencesRepository
 import com.itspark.pdfreader.notification.work.EngagementScheduler
 import com.itspark.pdfreader.presentation.home.HomeActivity
 import com.itspark.pdfreader.service.DocumentSyncForegroundService
-import com.google.firebase.messaging.FirebaseMessaging
-import com.google.firebase.messaging.FirebaseMessagingService
-import com.google.firebase.messaging.RemoteMessage
-import java.io.File
 import kotlin.random.Random
 
 /**

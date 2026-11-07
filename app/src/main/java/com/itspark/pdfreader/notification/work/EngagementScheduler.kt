@@ -38,8 +38,10 @@ object EngagementScheduler {
 
     /**
      * Evaluates whether to show a re-engagement notification upon device unlock.
+     * Uses a delayed schedule so alerts never pop up immediately when the user is actively using the device.
      */
     fun evaluateUnlockEngagement(context: Context) {
+        Log.i(TAG, "evaluateUnlockEngagement: Scheduling unlock engagement evaluation work")
         val unlockRequest = OneTimeWorkRequestBuilder<EngagementNotificationWorker>()
             .setInitialDelay(2, TimeUnit.HOURS)
             .build()
