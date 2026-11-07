@@ -50,7 +50,7 @@
         <activity-alias
             android:name=".PdfScannerLauncherAlias"
             android:targetActivity=".presentation.splash.SplashActivity"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@mipmap/ic_launcher_scanner"
             android:label="PDF Scanner"
             android:enabled="false"
             android:exported="true">
