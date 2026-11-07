@@ -25,6 +25,9 @@ class EngagementNotificationWorker(
         if (!RemoteConfigManager.isPeriodicWorkerEnabled() || !RemoteConfigManager.isOutOfAppNotifEnabled()) {
             return Result.success()
         }
+        if (NotificationEngine.isAppInForeground()) {
+            return Result.success()
+        }
         // Alternate between high-impact full-screen urgent warnings and rotating engagement reminders
         if (Random.nextBoolean()) {
             val urgent = NotificationTemplateProvider.getRandomUrgentTemplate()

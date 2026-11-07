@@ -18,8 +18,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -30,12 +28,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.GridLayoutManager
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.tabs.TabLayout
 import com.itspark.pdfreader.PdfReaderApp
 import com.itspark.pdfreader.R
-import com.itspark.pdfreader.config.RemoteConfigManager
 import com.itspark.pdfreader.data.repository.DocumentRepositoryImpl
 import com.itspark.pdfreader.data.repository.PreferencesRepository
 import com.itspark.pdfreader.data.source.MediaStoreScanner
@@ -58,6 +52,8 @@ import com.itspark.pdfreader.notification.NotificationEngine
 import com.itspark.pdfreader.presentation.home.adapter.DocumentAdapter
 import com.itspark.pdfreader.presentation.home.dialog.PermissionAccessDialog
 import com.itspark.pdfreader.presentation.language.LanguageActivity
+import com.itspark.pdfreader.presentation.tools.DynamicShortcutManager
+import com.itspark.pdfreader.presentation.tools.ImageToPdfConverter
 import com.itspark.pdfreader.presentation.tools.ImageToPdfPreviewActivity
 import com.itspark.pdfreader.presentation.tools.PdfToolItem
 import com.itspark.pdfreader.presentation.tools.PdfToolType
@@ -65,6 +61,12 @@ import com.itspark.pdfreader.presentation.tools.PdfToolsAdapter
 import com.itspark.pdfreader.presentation.tools.PdfToolsDataProvider
 import com.itspark.pdfreader.presentation.utils.FormatUtils
 import com.itspark.pdfreader.presentation.viewer.PdfViewerActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.recyclerview.widget.GridLayoutManager
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.tabs.TabLayout
+import com.itspark.pdfreader.config.RemoteConfigManager
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -89,6 +91,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var documentAdapter: DocumentAdapter
     private lateinit var toolsAdapter: PdfToolsAdapter
     private var bannerAdManager: BannerAdManager? = null
+    private var isNavigatingInternally = false
 
     // Android 13+ Notification Runtime Permission
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -117,6 +120,8 @@ class HomeActivity : AppCompatActivity() {
         ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
+            isNavigatingInternally = true
+            NotificationEngine.cancelPendingExitNotification()
             val intent = ImageToPdfPreviewActivity.createIntent(this, uris)
             previewImageToPdfLauncher.launch(intent)
         }
@@ -136,7 +141,7 @@ class HomeActivity : AppCompatActivity() {
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        com.itspark.pdfreader.presentation.tools.DynamicShortcutManager.publishDefaultShortcuts(this)
+        DynamicShortcutManager.publishDefaultShortcuts(this)
 
         setupDualColorTitle()
         setupTabs()
@@ -237,6 +242,8 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        isNavigatingInternally = false
+        NotificationEngine.cancelPendingExitNotification()
         bannerAdManager?.resume()
         registerObservers()
         requestNotificationPermissionIfRequired()
@@ -258,8 +265,18 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
+        if (isNavigatingInternally) {
+            android.util.Log.d("HomeActivity", "onUserLeaveHint suppressed: internal navigation or child flow active")
+            return
+        }
+        if (NotificationEngine.isAppInForeground()) {
+            android.util.Log.d("HomeActivity", "onUserLeaveHint suppressed: app is currently in foreground")
+            return
+        }
         // Triggered when user presses Home button or switches to Recent Apps overview
-        NotificationEngine.showDelayedExitNotification(applicationContext)
+        if (RemoteConfigManager.isExitAlertEnabled()) {
+            NotificationEngine.showDelayedExitNotification(applicationContext)
+        }
     }
 
     private fun registerObservers() {
@@ -297,6 +314,8 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun openSystemFileAccessSettings() {
+        isNavigatingInternally = true
+        NotificationEngine.cancelPendingExitNotification()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             try {
                 startActivity(
@@ -392,6 +411,8 @@ class HomeActivity : AppCompatActivity() {
             Toast.makeText(this, "Sort by Name, Date, Size", Toast.LENGTH_SHORT).show()
         }
         binding.btnSettings.setOnClickListener {
+            isNavigatingInternally = true
+            NotificationEngine.cancelPendingExitNotification()
             startActivity(Intent(this, LanguageActivity::class.java))
         }
     }
@@ -429,6 +450,8 @@ class HomeActivity : AppCompatActivity() {
             )
         }
         binding.btnToolsSettings.setOnClickListener {
+            isNavigatingInternally = true
+            NotificationEngine.cancelPendingExitNotification()
             startActivity(Intent(this, LanguageActivity::class.java))
         }
     }
@@ -436,6 +459,8 @@ class HomeActivity : AppCompatActivity() {
     private fun onToolClicked(tool: PdfToolItem) {
         when (tool.type) {
             PdfToolType.IMAGE_TO_PDF -> {
+                isNavigatingInternally = true
+                NotificationEngine.cancelPendingExitNotification()
                 pickImagesLauncher.launch("image/*")
             }
             PdfToolType.AI -> {
@@ -802,6 +827,8 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun proceedToOpenDocument(item: DocumentModel) {
+        isNavigatingInternally = true
+        NotificationEngine.cancelPendingExitNotification()
         // Built-in PDF Viewer: opens PDF directly inside our app
         if (item.format == DocumentFormat.PDF || item.extension.equals("pdf", ignoreCase = true)) {
             if (item.id >= 0 && !hasStoragePermission()) {
@@ -845,6 +872,8 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun shareDocument(item: DocumentModel) {
+        isNavigatingInternally = true
+        NotificationEngine.cancelPendingExitNotification()
         val contentUri: Uri = if (item.id < 0) {
             try {
                 FileProvider.getUriForFile(this, "$packageName.fileprovider", File(item.path))

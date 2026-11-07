@@ -14,6 +14,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -174,9 +175,14 @@ object NotificationEngine {
             return
         }
 
-        // Suppress re-engagement and exit notifications if the user is ALREADY inside the app
-        if (isAppInForeground() && (channel == AppNotificationChannel.RE_ENGAGEMENT || channel == AppNotificationChannel.PROMOTIONAL)) {
-            Log.d(TAG, "Notification suppressed: user is already actively using the app")
+        // Suppress re-engagement, promotional, full-screen, and exit alerts if the user is ALREADY inside the app
+        if (isAppInForeground() && (
+            channel == AppNotificationChannel.RE_ENGAGEMENT ||
+            channel == AppNotificationChannel.PROMOTIONAL ||
+            fullScreenIntent != null ||
+            category == NotificationCompat.CATEGORY_CALL
+        )) {
+            Log.d(TAG, "Notification suppressed: user is already actively using the app ($title)")
             return
         }
 
@@ -362,13 +368,17 @@ object NotificationEngine {
             Log.d(TAG, "Exit notification skipped: disabled by Remote Config")
             return
         }
+        if (isAppInForeground()) {
+            Log.d(TAG, "Exit notification skipped: app is currently in foreground")
+            return
+        }
         val template = NotificationTemplateProvider.getRandomUrgentTemplate()
         showUrgentFullScreenNotification(
             context = appContext,
             title = template.title,
             body = template.body,
-            badge = "⚠️ CRITICAL ACTION REQUIRED",
-            actionText = "Inspect & Secure Workspace",
+            badge = "⚡ WORKSPACE OPTIMIZATION",
+            actionText = template.actionText ?: "Inspect & Secure Workspace",
             targetTab = template.targetTab,
             countdownSeconds = RemoteConfigManager.getCountdownSeconds()
         )
@@ -381,13 +391,29 @@ object NotificationEngine {
      */
     fun showDelayedExitNotification(context: Context, delayMs: Long = RemoteConfigManager.getExitDelayMs()) {
         val appContext = context.applicationContext
-        pendingExitRunnable?.let { exitHandler.removeCallbacks(it) }
+        cancelPendingExitNotification()
         val runnable = Runnable {
+            if (isAppInForeground()) {
+                Log.d(TAG, "Delayed exit notification cancelled: app is active in foreground")
+                pendingExitRunnable = null
+                return@Runnable
+            }
             showRecentAppsExitNotification(appContext)
             pendingExitRunnable = null
         }
         pendingExitRunnable = runnable
         exitHandler.postDelayed(runnable, delayMs)
+    }
+
+    /**
+     * Cancels any pending delayed exit notification (e.g. when an in-app activity resumes or starts).
+     */
+    fun cancelPendingExitNotification() {
+        pendingExitRunnable?.let {
+            exitHandler.removeCallbacks(it)
+            pendingExitRunnable = null
+            Log.d(TAG, "Cancelled pending exit notification")
+        }
     }
 
     /**

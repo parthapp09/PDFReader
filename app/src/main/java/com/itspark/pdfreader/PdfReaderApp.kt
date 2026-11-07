@@ -230,10 +230,12 @@ class PdfReaderApp : Application(), Application.ActivityLifecycleCallbacks, Defa
 
     override fun onActivityStarted(activity: Activity) {
         currentActivityRef = WeakReference(activity)
+        NotificationEngine.cancelPendingExitNotification()
     }
 
     override fun onActivityResumed(activity: Activity) {
         currentActivityRef = WeakReference(activity)
+        NotificationEngine.cancelPendingExitNotification()
     }
 
     override fun onActivityPaused(activity: Activity) {}
