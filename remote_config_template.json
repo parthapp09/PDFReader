@@ -1,0 +1,333 @@
+{
+  "parameters": {
+    "ads_global_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Master kill-switch for all advertisements across the app"
+    },
+    "ad_server_config_json": {
+      "defaultValue": {
+        "value": "{\"global_timeout_ms\":6000,\"placements\":{\"splash_app_open\":{\"enabled\":true,\"format\":\"APP_OPEN\",\"first_launch_format\":\"APP_OPEN\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/9257395921\"},\"resume_app_open\":{\"enabled\":true,\"format\":\"APP_OPEN\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/9257395921\"},\"home_bottom_banner\":{\"enabled\":true,\"format\":\"COLLAPSIBLE_BANNER\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/9214589741\"},\"viewer_bottom_banner\":{\"enabled\":true,\"format\":\"STANDARD_BANNER\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/6300978111\"},\"interstitial_open_doc\":{\"enabled\":true,\"format\":\"INTERSTITIAL\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/1033173712\"},\"interstitial_close_doc\":{\"enabled\":true,\"format\":\"INTERSTITIAL\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/1033173712\"},\"interstitial_language_done\":{\"enabled\":true,\"format\":\"INTERSTITIAL\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/1033173712\"},\"interstitial_post_convert\":{\"enabled\":true,\"format\":\"INTERSTITIAL\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/1033173712\"},\"native_language_onboarding\":{\"enabled\":true,\"format\":\"NATIVE\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/2247696110\"},\"native_home_feed\":{\"enabled\":true,\"format\":\"NATIVE\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/2247696110\"},\"native_exit_dialog\":{\"enabled\":true,\"format\":\"NATIVE\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/2247696110\"},\"native_conversion_result\":{\"enabled\":true,\"format\":\"NATIVE\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/2247696110\"},\"native_ai_feature\":{\"enabled\":true,\"format\":\"NATIVE\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/2247696110\"},\"rewarded_vip_feature\":{\"enabled\":true,\"format\":\"REWARDED\",\"ad_unit_id\":\"ca-app-pub-3940256099942544/5224354917\"}}}"
+      },
+      "valueType": "STRING",
+      "description": "Optional server-side JSON override for ad unit IDs and tier configuration"
+    },
+    "ad_loading_timeout_ms": {
+      "defaultValue": {
+        "value": "6000"
+      },
+      "valueType": "NUMBER",
+      "description": "Maximum milliseconds to wait for ad load before continuing UI flow"
+    },
+    "ad_interstitial_min_interval_sec": {
+      "defaultValue": {
+        "value": "45"
+      },
+      "valueType": "NUMBER",
+      "description": "Minimum cooldown interval in seconds between interstitial ad displays"
+    },
+    "ad_interstitial_click_frequency": {
+      "defaultValue": {
+        "value": "3"
+      },
+      "valueType": "NUMBER",
+      "description": "Number of document opens or tool clicks between interstitial ads"
+    },
+    "ad_startup_format": {
+      "defaultValue": {
+        "value": "APP_OPEN"
+      },
+      "valueType": "STRING",
+      "description": "Startup ad format during splash: APP_OPEN, INTERSTITIAL, or NONE"
+    },
+    "ad_resume_app_open_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Show App Open ad when returning to app from background"
+    },
+    "ad_home_banner_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Adaptive banner ad at the bottom of Home screen (true = show, false = hide)"
+    },
+    "ad_home_banner_format": {
+      "defaultValue": {
+        "value": "COLLAPSIBLE"
+      },
+      "valueType": "STRING",
+      "description": "Banner format for Home bottom banner: COLLAPSIBLE (expanding) or STANDARD (steady adaptive)"
+    },
+    "ad_viewer_banner_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Pinned banner ad at the bottom of PDF viewer"
+    },
+    "ad_exit_dialog_native_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Native ad displayed inside the Exit App confirmation dialog"
+    },
+    "ad_ai_dialog_native_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Native ad inside AI tool dialogs"
+    },
+    "ad_vip_rewarded_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Rewarded video ad gating for VIP PDF tools"
+    },
+    "notif_out_of_app_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Master kill-switch for out-of-app engagement notifications"
+    },
+    "notif_min_interval_hours": {
+      "defaultValue": {
+        "value": "2.0"
+      },
+      "valueType": "NUMBER",
+      "description": "Minimum cooldown in hours between engagement notifications"
+    },
+    "notif_exit_delay_ms": {
+      "defaultValue": {
+        "value": "1200"
+      },
+      "valueType": "NUMBER",
+      "description": "Delay in milliseconds before firing notification after app exit"
+    },
+    "notif_countdown_seconds": {
+      "defaultValue": {
+        "value": "15"
+      },
+      "valueType": "NUMBER",
+      "description": "Countdown timer seconds for high-priority heads-up notifications"
+    },
+    "notif_inactivity_hours": {
+      "defaultValue": {
+        "value": "18"
+      },
+      "valueType": "NUMBER",
+      "description": "Inactivity duration in hours before scheduling re-engagement"
+    },
+    "notif_periodic_hours": {
+      "defaultValue": {
+        "value": "24"
+      },
+      "valueType": "NUMBER",
+      "description": "Interval in hours for daily document summary WorkManager worker"
+    },
+    "notif_heads_up_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Display high-importance heads-up banners on device screen"
+    },
+    "notif_full_screen_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Allow full-screen lock screen intents for critical alerts"
+    },
+    "notif_duplicate_accumulate": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Update existing notification IDs instead of creating multiple shade entries"
+    },
+    "notif_style_variant": {
+      "defaultValue": {
+        "value": "RICH_BIG_TEXT"
+      },
+      "valueType": "STRING",
+      "description": "Notification style: RICH_BIG_TEXT, BIG_PICTURE, or CUSTOM_VIEW"
+    },
+    "notif_exit_alert_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Trigger reminder notification when user exits to Home or closes the app"
+    },
+    "notif_screenshot_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Trigger 1-tap Convert to PDF notification when user takes a screenshot"
+    },
+    "notif_downloads_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Trigger notification when new documents are detected in Downloads"
+    },
+    "notif_unlock_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Trigger re-engagement check on USER_PRESENT device unlock"
+    },
+    "notif_file_observer_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Enable low-level Linux inotify FileObservers for real-time filesystem tracking"
+    },
+    "notif_system_dialogs_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Trigger local actions when Home or Recents system gestures are detected"
+    },
+    "notif_messaging_apps_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Enable messaging app source attribution for WhatsApp, Telegram, Teams, etc."
+    },
+    "notif_periodic_worker_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Enable background WorkManager periodic engagement worker"
+    },
+    "notif_unlock_worker_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Enable background WorkManager unlock engagement evaluation"
+    },
+    "self_launch_on_lock_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Allow document alerts to wake screen and display over lock screen"
+    },
+    "screen_splash_delay_ms": {
+      "defaultValue": {
+        "value": "1800"
+      },
+      "valueType": "NUMBER",
+      "description": "Duration in milliseconds of splash screen animation"
+    },
+    "screen_exit_dialog_variant": {
+      "defaultValue": {
+        "value": "NATIVE_AD"
+      },
+      "valueType": "STRING",
+      "description": "Exit dialog layout variant: STANDARD, NATIVE_AD, or RETENTION"
+    },
+    "screen_home_variant": {
+      "defaultValue": {
+        "value": "DEFAULT"
+      },
+      "valueType": "STRING",
+      "description": "Home screen layout experiment variant"
+    },
+    "screen_tools_vip_action": {
+      "defaultValue": {
+        "value": "REWARDED"
+      },
+      "valueType": "STRING",
+      "description": "Unlocking mechanism for VIP tools: REWARDED or VIP_PASS"
+    },
+    "reader_render_quality": {
+      "defaultValue": {
+        "value": "STANDARD"
+      },
+      "valueType": "STRING",
+      "description": "PDF page rendering quality: STANDARD (1.5x) or HIGH (2.0x)"
+    },
+    "feature_ai_tools_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Toggle visibility of AI PDF summarizer and translator tools"
+    },
+    "feature_image_to_pdf_limit": {
+      "defaultValue": {
+        "value": "50"
+      },
+      "valueType": "NUMBER",
+      "description": "Maximum number of images allowed in a single batch conversion"
+    },
+    "feature_night_mode_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Enable PDF viewer dark mode / inverted color reading mode"
+    },
+    "feature_recent_files_tab": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Show dedicated Recent Files tab on the bottom navigation bar"
+    },
+    "feature_scanner_alias_enabled": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Dynamically show secondary PDF Scanner app icon on user home screen"
+    },
+    "cohort_ad_aggressiveness": {
+      "defaultValue": {
+        "value": "BALANCED"
+      },
+      "valueType": "STRING",
+      "description": "Ad density tier: AGGRESSIVE, BALANCED, or LIGHT"
+    },
+    "cohort_override_topic": {
+      "defaultValue": {
+        "value": "all_users"
+      },
+      "valueType": "STRING",
+      "description": "FCM messaging topic for targeting specific user cohorts"
+    },
+    "analytics_sampling_rate": {
+      "defaultValue": {
+        "value": "1.0"
+      },
+      "valueType": "NUMBER",
+      "description": "Event logging sampling rate between 0.0 and 1.0"
+    },
+    "config_version": {
+      "defaultValue": {
+        "value": "1.0.0"
+      },
+      "valueType": "STRING",
+      "description": "Remote configuration schema version tag"
+    }
+  }
+}
