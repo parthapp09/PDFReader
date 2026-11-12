@@ -1,4 +1,4 @@
-# Document Reader - PDF Editor & Viewer 📑
+# PDF Reader - PDF Editor & Viewer 📑
 
 Production-ready Native Android application built with **Kotlin**, **Clean Architecture**, **MVVM**, **StateFlow**, and **ViewBinding** (`minSdk = 23`, `compileSdk = 34`, `targetSdk = 34`).
 
@@ -49,7 +49,7 @@ Replicates and extends the functionality of top-tier Android office document sui
 The project follows Clean Architecture with strict separation of concerns across Data, Domain, and Presentation layers:
 
 ```
-com.alldocument.reader/
+com.itspark.pdfreader/
 ├── PdfReaderApp.kt                         // Application class, lifecycle observer & dependency init
 ├── config/
 │   ├── RemoteConfigManager.kt              // 47 Firebase Remote Config keys & fallback defaults
